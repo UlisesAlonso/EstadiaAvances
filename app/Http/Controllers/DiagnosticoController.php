@@ -32,6 +32,7 @@ class DiagnosticoController extends Controller
                 })
                 ->orderBy('fecha', 'desc')
                 ->paginate(15);
+<<<<<<< HEAD
         } elseif ($user->isAdmin()) {
             // Administradores ven todos los diagnósticos
             $diagnosticos = Diagnostico::with(['paciente.usuario', 'medico.usuario'])
@@ -45,6 +46,8 @@ class DiagnosticoController extends Controller
                 })
                 ->orderBy('fecha', 'desc')
                 ->paginate(15);
+=======
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         } else {
             // Pacientes ven sus propios diagnósticos
             $diagnosticos = Diagnostico::with(['medico.usuario'])
@@ -63,8 +66,13 @@ class DiagnosticoController extends Controller
     {
         $user = Auth::user();
         
+<<<<<<< HEAD
         if (!$user->isMedico() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden crear diagnósticos.');
+=======
+        if (!$user->isMedico()) {
+            return redirect()->route('diagnosticos.index')->with('error', 'Solo los médicos pueden crear diagnósticos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
@@ -79,8 +87,13 @@ class DiagnosticoController extends Controller
     {
         $user = Auth::user();
         
+<<<<<<< HEAD
         if (!$user->isMedico() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden crear diagnósticos.');
+=======
+        if (!$user->isMedico()) {
+            return redirect()->route('diagnosticos.index')->with('error', 'Solo los médicos pueden crear diagnósticos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
@@ -93,17 +106,27 @@ class DiagnosticoController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+<<<<<<< HEAD
         // Para administradores, necesitamos obtener el médico del paciente o usar un médico por defecto
         $id_medico = $user->isMedico() ? $user->medico->id_medico : 1; // Por defecto médico con ID 1
 
         $diagnostico = Diagnostico::create([
             'id_paciente' => $request->id_paciente,
             'id_medico' => $id_medico,
+=======
+        $diagnostico = Diagnostico::create([
+            'id_paciente' => $request->id_paciente,
+            'id_medico' => $user->medico->id_medico,
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
             'fecha' => $request->fecha,
             'descripcion' => $request->descripcion,
         ]);
 
+<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('success', 'Diagnóstico creado exitosamente.');
+=======
+        return redirect()->route('diagnosticos.index')->with('success', 'Diagnóstico creado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -116,11 +139,19 @@ class DiagnosticoController extends Controller
 
         // Verificar permisos
         if ($user->isPaciente() && $diagnostico->id_paciente !== $user->paciente->id_paciente) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('error', 'No tienes permisos para ver este diagnóstico.');
         }
 
         if ($user->isMedico() && $diagnostico->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('error', 'No tienes permisos para ver este diagnóstico.');
+=======
+            return redirect()->route('diagnosticos.index')->with('error', 'No tienes permisos para ver este diagnóstico.');
+        }
+
+        if ($user->isMedico() && $diagnostico->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('diagnosticos.index')->with('error', 'No tienes permisos para ver este diagnóstico.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         return view('diagnosticos.show', compact('diagnostico'));
@@ -133,15 +164,25 @@ class DiagnosticoController extends Controller
     {
         $user = Auth::user();
         
+<<<<<<< HEAD
         if (!$user->isMedico() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden editar diagnósticos.');
+=======
+        if (!$user->isMedico()) {
+            return redirect()->route('diagnosticos.index')->with('error', 'Solo los médicos pueden editar diagnósticos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $diagnostico = Diagnostico::findOrFail($id);
         
+<<<<<<< HEAD
         // Los médicos solo pueden editar sus propios diagnósticos
         if ($user->isMedico() && $diagnostico->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('error', 'No tienes permisos para editar este diagnóstico.');
+=======
+        if ($diagnostico->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('diagnosticos.index')->with('error', 'No tienes permisos para editar este diagnóstico.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
@@ -156,15 +197,25 @@ class DiagnosticoController extends Controller
     {
         $user = Auth::user();
         
+<<<<<<< HEAD
         if (!$user->isMedico() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden editar diagnósticos.');
+=======
+        if (!$user->isMedico()) {
+            return redirect()->route('diagnosticos.index')->with('error', 'Solo los médicos pueden editar diagnósticos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $diagnostico = Diagnostico::findOrFail($id);
         
+<<<<<<< HEAD
         // Los médicos solo pueden editar sus propios diagnósticos
         if ($user->isMedico() && $diagnostico->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('error', 'No tienes permisos para editar este diagnóstico.');
+=======
+        if ($diagnostico->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('diagnosticos.index')->with('error', 'No tienes permisos para editar este diagnóstico.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
@@ -178,7 +229,11 @@ class DiagnosticoController extends Controller
 
         $diagnostico->update($request->all());
 
+<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('success', 'Diagnóstico actualizado exitosamente.');
+=======
+        return redirect()->route('diagnosticos.index')->with('success', 'Diagnóstico actualizado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -188,19 +243,35 @@ class DiagnosticoController extends Controller
     {
         $user = Auth::user();
         
+<<<<<<< HEAD
         if (!$user->isMedico() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden eliminar diagnósticos.');
+=======
+        if (!$user->isMedico()) {
+            return redirect()->route('diagnosticos.index')->with('error', 'Solo los médicos pueden eliminar diagnósticos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $diagnostico = Diagnostico::findOrFail($id);
         
+<<<<<<< HEAD
         // Los médicos solo pueden eliminar sus propios diagnósticos
         if ($user->isMedico() && $diagnostico->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('error', 'No tienes permisos para eliminar este diagnóstico.');
+=======
+        if ($diagnostico->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('diagnosticos.index')->with('error', 'No tienes permisos para eliminar este diagnóstico.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $diagnostico->delete();
 
+<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index')->with('success', 'Diagnóstico eliminado exitosamente.');
     }
 }
+=======
+        return redirect()->route('diagnosticos.index')->with('success', 'Diagnóstico eliminado exitosamente.');
+    }
+}
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8

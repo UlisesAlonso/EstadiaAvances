@@ -11,12 +11,19 @@ class Tratamiento extends Model
 
     protected $table = 'tratamientos';
     protected $primaryKey = 'id_tratamiento';
+<<<<<<< HEAD
     public $timestamps = true;
+=======
+    public $timestamps = false;
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
 
     protected $fillable = [
         'id_paciente',
         'id_medico',
+<<<<<<< HEAD
         'id_diagnostico',
+=======
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         'nombre',
         'dosis',
         'frecuencia',

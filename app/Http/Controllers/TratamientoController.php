@@ -9,8 +9,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\Mail;
 use App\Mail\CambioTratamiento;
+=======
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
 
 class TratamientoController extends Controller
 {
@@ -54,7 +57,11 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
@@ -71,7 +78,11 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
@@ -102,7 +113,11 @@ class TratamientoController extends Controller
             'activo' => true,
         ]);
 
+<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento creado exitosamente.');
+=======
+        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento creado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -115,11 +130,19 @@ class TratamientoController extends Controller
 
         // Verificar permisos
         if ($user->isPaciente() && $tratamiento->id_paciente !== $user->paciente->id_paciente) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
         }
 
         if ($user->isMedico() && $tratamiento->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
+        }
+
+        if ($user->isMedico() && $tratamiento->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         return view('tratamientos.show', compact('tratamiento'));
@@ -133,13 +156,21 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
@@ -156,13 +187,21 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
@@ -179,10 +218,15 @@ class TratamientoController extends Controller
         }
 
         $tratamiento->update($request->all());
+<<<<<<< HEAD
         Mail::to($tratamiento->paciente->usuario->correo) 
                 ->send(new CambioTratamiento($tratamiento, $tratamiento->paciente->usuario));
 
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento actualizado exitosamente.');
+=======
+
+        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento actualizado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -193,18 +237,30 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden eliminar tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden eliminar tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para eliminar este tratamiento.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para eliminar este tratamiento.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento->delete();
 
+<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento eliminado exitosamente.');
+=======
+        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento eliminado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -227,6 +283,7 @@ class TratamientoController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Método para pacientes ver detalles de un tratamiento
      */
     public function pacienteShow($id)
@@ -246,18 +303,26 @@ class TratamientoController extends Controller
 
     /**
      * Cambiar estado del tratamiento (finalizar o suspender)
+=======
+     * Cambiar estado del tratamiento
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
      */
     public function toggleStatus($id)
     {
         $user = Auth::user();
         
         if (!$user->isMedico()) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden cambiar el estado de tratamientos.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden cambiar el estado de tratamientos.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
+<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para modificar este tratamiento.');
         }
 
@@ -294,5 +359,13 @@ class TratamientoController extends Controller
         $tratamiento->update(['activo' => false]);
 
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento finalizado exitosamente.');
+=======
+            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para modificar este tratamiento.');
+        }
+
+        $tratamiento->update(['activo' => !$tratamiento->activo]);
+
+        return redirect()->route('tratamientos.index')->with('success', 'Estado del tratamiento actualizado exitosamente.');
+>>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 }
