@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('usuarios', function (Blueprint $table) {
             $table->id('id_usuario');
-            $table->string('nombre_completo');
-            $table->string('correo')->unique();
-            $table->string('contrasena');
+            $table->string('nombre', 100)->nullable();
+            $table->string('apPaterno', 100)->nullable();
+            $table->string('apMaterno', 100)->nullable();
+            $table->string('correo', 100)->unique();
+            $table->string('contrasena', 255);
             $table->enum('rol', ['administrador', 'medico', 'paciente']);
             $table->boolean('activo')->default(true);
             $table->timestamps();

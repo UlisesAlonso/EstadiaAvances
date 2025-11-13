@@ -16,6 +16,18 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
+        // Si el usuario ya está autenticado, redirigir al dashboard correspondiente
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->isAdmin()) {
+                return redirect()->route('admin.dashboard');
+            } elseif ($user->isMedico()) {
+                return redirect()->route('medico.dashboard');
+            } else {
+                return redirect()->route('paciente.dashboard');
+            }
+        }
+        
         return view('auth.login');
     }
 

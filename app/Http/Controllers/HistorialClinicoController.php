@@ -6,196 +6,411 @@ use App\Models\HistorialClinico;
 use App\Models\Paciente;
 use App\Models\Diagnostico;
 use App\Models\Tratamiento;
-use App\Models\User;
+use App\Models\CatalogoDiagnostico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class HistorialClinicoController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Mostrar listado de historiales clínicos con filtros
      */
-    public function index(Request $request)
+    public function index(Request $solicitud)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if ($user->isMedico()) {
-            // Médicos ven historiales de sus pacientes
-            $historiales = HistorialClinico::with(['paciente.usuario', 'diagnostico', 'tratamiento'])
-                ->whereHas('paciente', function($query) use ($user) {
-                    $query->whereHas('medico', function($q) use ($user) {
-                        $q->where('id_medico', $user->medico->id_medico);
-                    });
-                })
-                ->when($request->filled('paciente'), function($query) use ($request) {
-                    return $query->whereHas('paciente.usuario', function($q) use ($request) {
-                        $q->where('nombre', 'like', '%' . $request->paciente . '%');
-                    });
-                })
-                ->when($request->filled('fecha'), function($query) use ($request) {
-                    return $query->whereDate('fecha_registro', $request->fecha);
-                })
+        if ($usuario->isMedico()) {
+            // Médicos ven todos los historiales clínicos
+            $consulta = HistorialClinico::with([
+                'paciente.usuario', 
+                'medico.usuario', 
+                'diagnostico.catalogoDiagnostico', 
+                'tratamiento'
+            ]);
+            
+            // Filtro por nombre de paciente
+            if ($solicitud->filled('nombre_paciente')) {
+                $consulta->whereHas('paciente.usuario', function($q) use ($solicitud) {
+                    $q->where('nombre', 'like', '%' . $solicitud->nombre_paciente . '%');
+                });
+            }
+            
+            // Filtro por fecha del evento
+            if ($solicitud->filled('fecha_desde')) {
+                $consulta->whereDate('fecha_evento', '>=', $solicitud->fecha_desde);
+            }
+            
+            if ($solicitud->filled('fecha_hasta')) {
+                $consulta->whereDate('fecha_evento', '<=', $solicitud->fecha_hasta);
+            }
+            
+            // Filtro por diagnóstico
+            if ($solicitud->filled('id_diagnostico')) {
+                $consulta->where('id_diagnostico', $solicitud->id_diagnostico);
+            }
+            
+            // Filtro por estado
+            if ($solicitud->filled('estado')) {
+                $consulta->where('estado', $solicitud->estado);
+            }
+            
+            $historiales = $consulta->orderBy('fecha_evento', 'desc')
+                ->orderBy('fecha_registro', 'desc')
+                ->paginate(15);
+                
+        } elseif ($usuario->isAdmin()) {
+            // Administradores ven todos los historiales para auditoría
+            $consulta = HistorialClinico::with([
+                'paciente.usuario', 
+                'medico.usuario', 
+                'diagnostico.catalogoDiagnostico', 
+                'tratamiento'
+            ]);
+            
+            // Filtros para administrador
+            if ($solicitud->filled('nombre_paciente')) {
+                $consulta->whereHas('paciente.usuario', function($q) use ($solicitud) {
+                    $q->where('nombre', 'like', '%' . $solicitud->nombre_paciente . '%');
+                });
+            }
+            
+            if ($solicitud->filled('fecha_desde')) {
+                $consulta->whereDate('fecha_evento', '>=', $solicitud->fecha_desde);
+            }
+            
+            if ($solicitud->filled('fecha_hasta')) {
+                $consulta->whereDate('fecha_evento', '<=', $solicitud->fecha_hasta);
+            }
+            
+            if ($solicitud->filled('id_diagnostico')) {
+                $consulta->where('id_diagnostico', $solicitud->id_diagnostico);
+            }
+            
+            $historiales = $consulta->orderBy('fecha_evento', 'desc')
                 ->orderBy('fecha_registro', 'desc')
                 ->paginate(15);
         } else {
             // Pacientes ven su propio historial
-            $historiales = HistorialClinico::with(['diagnostico', 'tratamiento'])
-                ->where('id_paciente', $user->paciente->id_paciente)
+            $historiales = HistorialClinico::with([
+                'medico.usuario', 
+                'diagnostico.catalogoDiagnostico', 
+                'tratamiento'
+            ])
+                ->where('id_paciente', $usuario->paciente->id_paciente)
+                ->orderBy('fecha_evento', 'desc')
                 ->orderBy('fecha_registro', 'desc')
                 ->paginate(15);
         }
 
-        return view('historial-clinico.index', compact('historiales'));
+        // Obtener todos los diagnósticos para el filtro (médicos y admin ven todos)
+        $diagnosticos = null;
+        if ($usuario->isMedico() || $usuario->isAdmin()) {
+            $diagnosticos = Diagnostico::with('catalogoDiagnostico')->get();
+        }
+
+        return view('historial-clinico.index', compact('historiales', 'diagnosticos'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Mostrar formulario para crear nuevo evento clínico
      */
     public function create()
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isMedico()) {
-            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos pueden crear registros de historial clínico.');
+        if (!$usuario->isMedico() && !$usuario->isAdmin()) {
+            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden crear registros de historial clínico.');
         }
 
+        // Obtener todos los pacientes (médicos y admin ven todos)
         $pacientes = Paciente::with('usuario')->get();
-        $diagnosticos = Diagnostico::where('id_medico', $user->medico->id_medico)->get();
-        $tratamientos = Tratamiento::where('id_medico', $user->medico->id_medico)->get();
+            
+        // Obtener todos los diagnósticos (médicos y admin ven todos)
+        $diagnosticos = Diagnostico::with('catalogoDiagnostico')->get();
+            
+        // Obtener todos los tratamientos (médicos y admin ven todos)
+        $tratamientos = Tratamiento::all();
 
         return view('historial-clinico.create', compact('pacientes', 'diagnosticos', 'tratamientos'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Guardar nuevo evento clínico
      */
-    public function store(Request $request)
+    public function store(Request $solicitud)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isMedico()) {
-            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos pueden crear registros de historial clínico.');
+        if (!$usuario->isMedico() && !$usuario->isAdmin()) {
+            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden crear registros de historial clínico.');
         }
 
-        $validator = Validator::make($request->all(), [
+        $validador = Validator::make($solicitud->all(), [
             'id_paciente' => 'required|exists:pacientes,id_paciente',
             'id_diagnostico' => 'nullable|exists:diagnosticos,id_diagnostico',
             'id_tratamiento' => 'nullable|exists:tratamientos,id_tratamiento',
-            'observaciones' => 'required|string|max:1000',
+            'fecha_evento' => 'required|date',
+            'observaciones' => 'required|string|max:5000',
+            'resultados_analisis' => 'nullable|string|max:5000',
+            'archivos_adjuntos.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png',
+        ], [
+            'id_paciente.required' => 'Debe seleccionar un paciente.',
+            'id_paciente.exists' => 'El paciente seleccionado no existe.',
+            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
+            'fecha_evento.date' => 'La fecha del evento debe ser una fecha válida.',
+            'observaciones.required' => 'Las observaciones médicas son obligatorias.',
+            'observaciones.max' => 'Las observaciones no pueden exceder 5000 caracteres.',
+            'resultados_analisis.max' => 'Los resultados de análisis no pueden exceder 5000 caracteres.',
+            'archivos_adjuntos.*.file' => 'Los archivos adjuntos deben ser archivos válidos.',
+            'archivos_adjuntos.*.max' => 'Cada archivo no puede exceder 10MB.',
+            'archivos_adjuntos.*.mimes' => 'Los archivos deben ser PDF, Word o imágenes (JPG, PNG).',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+        if ($validador->fails()) {
+            return redirect()->back()->withErrors($validador)->withInput();
+        }
+
+        // Procesar archivos adjuntos
+        $archivos_adjuntos = [];
+        if ($solicitud->hasFile('archivos_adjuntos')) {
+            foreach ($solicitud->file('archivos_adjuntos') as $archivo) {
+                $ruta = $archivo->store('historial-clinico', 'public');
+                $archivos_adjuntos[] = $ruta;
+            }
+        }
+
+        // Determinar el médico tratante
+        $id_medico = null;
+        if ($usuario->isMedico()) {
+            $id_medico = $usuario->medico->id_medico;
+        } elseif ($solicitud->id_diagnostico) {
+            $diagnostico = Diagnostico::find($solicitud->id_diagnostico);
+            $id_medico = $diagnostico ? $diagnostico->id_medico : null;
+        } elseif ($solicitud->id_tratamiento) {
+            $tratamiento = Tratamiento::find($solicitud->id_tratamiento);
+            $id_medico = $tratamiento ? $tratamiento->id_medico : null;
         }
 
         $historial = HistorialClinico::create([
-            'id_paciente' => $request->id_paciente,
-            'id_diagnostico' => $request->id_diagnostico,
-            'id_tratamiento' => $request->id_tratamiento,
-            'observaciones' => $request->observaciones,
+            'id_paciente' => $solicitud->id_paciente,
+            'id_medico' => $id_medico,
+            'id_diagnostico' => $solicitud->id_diagnostico,
+            'id_tratamiento' => $solicitud->id_tratamiento,
+            'fecha_evento' => $solicitud->fecha_evento,
             'fecha_registro' => now(),
+            'observaciones' => $solicitud->observaciones,
+            'resultados_analisis' => $solicitud->resultados_analisis,
+            'archivos_adjuntos' => !empty($archivos_adjuntos) ? $archivos_adjuntos : null,
+            'estado' => 'activo',
         ]);
 
-        return redirect()->route('historial-clinico.index')->with('success', 'Registro de historial clínico creado exitosamente.');
+        return redirect()->route('historial-clinico.index')->with('success', 'Evento clínico registrado exitosamente.');
     }
 
     /**
-     * Display the specified resource.
+     * Mostrar detalles de un evento clínico
      */
     public function show($id)
     {
-        $user = Auth::user();
-        $historial = HistorialClinico::with(['paciente.usuario', 'diagnostico', 'tratamiento'])->findOrFail($id);
+        $usuario = Auth::user();
+        $historial = HistorialClinico::with([
+            'paciente.usuario', 
+            'medico.usuario', 
+            'diagnostico.catalogoDiagnostico', 
+            'tratamiento'
+        ])->findOrFail($id);
 
         // Verificar permisos
-        if ($user->isPaciente() && $historial->id_paciente !== $user->paciente->id_paciente) {
+        if ($usuario->isPaciente() && $historial->id_paciente !== $usuario->paciente->id_paciente) {
             return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para ver este registro.');
         }
 
-        if ($user->isMedico() && !$historial->paciente->medico || $historial->paciente->medico->id_medico !== $user->medico->id_medico) {
-            return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para ver este registro.');
-        }
+        // Los médicos pueden ver todos los historiales
 
         return view('historial-clinico.show', compact('historial'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Mostrar formulario para editar evento clínico
      */
     public function edit($id)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isMedico()) {
-            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos pueden editar registros de historial clínico.');
+        if (!$usuario->isMedico() && !$usuario->isAdmin()) {
+            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden editar registros de historial clínico.');
         }
 
         $historial = HistorialClinico::findOrFail($id);
         
-        if (!$historial->paciente->medico || $historial->paciente->medico->id_medico !== $user->medico->id_medico) {
-            return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para editar este registro.');
-        }
+        // Los médicos pueden editar todos los historiales
 
+        // Obtener datos para el formulario (todos los pacientes)
         $pacientes = Paciente::with('usuario')->get();
-        $diagnosticos = Diagnostico::where('id_medico', $user->medico->id_medico)->get();
-        $tratamientos = Tratamiento::where('id_medico', $user->medico->id_medico)->get();
+            
+        // Obtener todos los diagnósticos (médicos y admin ven todos)
+        $diagnosticos = Diagnostico::with('catalogoDiagnostico')->get();
+            
+        // Obtener todos los tratamientos (médicos y admin ven todos)
+        $tratamientos = Tratamiento::all();
 
         return view('historial-clinico.edit', compact('historial', 'pacientes', 'diagnosticos', 'tratamientos'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Actualizar evento clínico
      */
-    public function update(Request $request, $id)
+    public function update(Request $solicitud, $id)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isMedico()) {
-            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos pueden editar registros de historial clínico.');
+        if (!$usuario->isMedico() && !$usuario->isAdmin()) {
+            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden editar registros de historial clínico.');
         }
 
         $historial = HistorialClinico::findOrFail($id);
         
-        if (!$historial->paciente->medico || $historial->paciente->medico->id_medico !== $user->medico->id_medico) {
-            return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para editar este registro.');
+        // Verificar permisos
+        if ($usuario->isMedico()) {
+            $paciente = $historial->paciente;
+            if (!$paciente->medico || $paciente->medico->id_medico !== $usuario->medico->id_medico) {
+                return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para editar este registro.');
+            }
         }
 
-        $validator = Validator::make($request->all(), [
+        $validador = Validator::make($solicitud->all(), [
             'id_diagnostico' => 'nullable|exists:diagnosticos,id_diagnostico',
             'id_tratamiento' => 'nullable|exists:tratamientos,id_tratamiento',
-            'observaciones' => 'required|string|max:1000',
+            'fecha_evento' => 'required|date',
+            'observaciones' => 'required|string|max:5000',
+            'resultados_analisis' => 'nullable|string|max:5000',
+            'archivos_adjuntos.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png',
+        ], [
+            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
+            'fecha_evento.date' => 'La fecha del evento debe ser una fecha válida.',
+            'observaciones.required' => 'Las observaciones médicas son obligatorias.',
+            'observaciones.max' => 'Las observaciones no pueden exceder 5000 caracteres.',
+            'resultados_analisis.max' => 'Los resultados de análisis no pueden exceder 5000 caracteres.',
+            'archivos_adjuntos.*.file' => 'Los archivos adjuntos deben ser archivos válidos.',
+            'archivos_adjuntos.*.max' => 'Cada archivo no puede exceder 10MB.',
+            'archivos_adjuntos.*.mimes' => 'Los archivos deben ser PDF, Word o imágenes (JPG, PNG).',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+        if ($validador->fails()) {
+            return redirect()->back()->withErrors($validador)->withInput();
         }
 
-        $historial->update($request->all());
+        // Procesar nuevos archivos adjuntos
+        $archivos_existentes = $historial->archivos_adjuntos ?? [];
+        if ($solicitud->hasFile('archivos_adjuntos')) {
+            foreach ($solicitud->file('archivos_adjuntos') as $archivo) {
+                $ruta = $archivo->store('historial-clinico', 'public');
+                $archivos_existentes[] = $ruta;
+            }
+        }
 
-        return redirect()->route('historial-clinico.index')->with('success', 'Registro de historial clínico actualizado exitosamente.');
+        // Eliminar archivos marcados para eliminar
+        if ($solicitud->filled('archivos_eliminar')) {
+            $archivos_eliminar = is_array($solicitud->archivos_eliminar) 
+                ? $solicitud->archivos_eliminar 
+                : [$solicitud->archivos_eliminar];
+                
+            foreach ($archivos_eliminar as $archivo_eliminar) {
+                if (Storage::disk('public')->exists($archivo_eliminar)) {
+                    Storage::disk('public')->delete($archivo_eliminar);
+                }
+                $archivos_existentes = array_filter($archivos_existentes, function($archivo) use ($archivo_eliminar) {
+                    return $archivo !== $archivo_eliminar;
+                });
+            }
+            $archivos_existentes = array_values($archivos_existentes);
+        }
+
+        $historial->update([
+            'id_diagnostico' => $solicitud->id_diagnostico,
+            'id_tratamiento' => $solicitud->id_tratamiento,
+            'fecha_evento' => $solicitud->fecha_evento,
+            'observaciones' => $solicitud->observaciones,
+            'resultados_analisis' => $solicitud->resultados_analisis,
+            'archivos_adjuntos' => !empty($archivos_existentes) ? $archivos_existentes : null,
+        ]);
+
+        return redirect()->route('historial-clinico.index')->with('success', 'Evento clínico actualizado exitosamente.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Cerrar evento clínico (no eliminar, solo cambiar estado)
      */
-    public function destroy($id)
+    public function cerrar($id)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isMedico()) {
-            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos pueden eliminar registros de historial clínico.');
+        if (!$usuario->isMedico() && !$usuario->isAdmin()) {
+            return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden cerrar eventos clínicos.');
         }
 
         $historial = HistorialClinico::findOrFail($id);
         
-        if (!$historial->paciente->medico || $historial->paciente->medico->id_medico !== $user->medico->id_medico) {
-            return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para eliminar este registro.');
+        // Los médicos pueden cerrar todos los eventos clínicos
+
+        $historial->update(['estado' => 'cerrado']);
+
+        return redirect()->route('historial-clinico.index')->with('success', 'Evento clínico cerrado exitosamente.');
+    }
+
+    /**
+     * Generar reporte del historial clínico
+     */
+    public function reporte(Request $solicitud, $id_paciente = null)
+    {
+        $usuario = Auth::user();
+        
+        // Determinar el paciente para el reporte
+        if ($id_paciente) {
+            $paciente = Paciente::with('usuario')->findOrFail($id_paciente);
+            
+            // Verificar permisos
+            if ($usuario->isPaciente() && $paciente->id_paciente !== $usuario->paciente->id_paciente) {
+                return redirect()->route('historial-clinico.index')->with('error', 'No tienes permisos para ver este reporte.');
+            }
+            
+            // Los médicos pueden ver reportes de todos los pacientes
+        } else {
+            if ($usuario->isPaciente()) {
+                $paciente = $usuario->paciente;
+            } else {
+                return redirect()->route('historial-clinico.index')->with('error', 'Debe especificar un paciente para el reporte.');
+            }
         }
 
-        $historial->delete();
+        // Obtener historial del paciente
+        $consulta = HistorialClinico::with([
+            'medico.usuario', 
+            'diagnostico.catalogoDiagnostico', 
+            'tratamiento'
+        ])
+            ->where('id_paciente', $paciente->id_paciente);
 
-        return redirect()->route('historial-clinico.index')->with('success', 'Registro de historial clínico eliminado exitosamente.');
+        // Filtros opcionales
+        if ($solicitud->filled('fecha_desde')) {
+            $consulta->whereDate('fecha_evento', '>=', $solicitud->fecha_desde);
+        }
+        
+        if ($solicitud->filled('fecha_hasta')) {
+            $consulta->whereDate('fecha_evento', '<=', $solicitud->fecha_hasta);
+        }
+        
+        if ($solicitud->filled('estado')) {
+            $consulta->where('estado', $solicitud->estado);
+        }
+
+        $historiales = $consulta->orderBy('fecha_evento', 'desc')
+            ->orderBy('fecha_registro', 'desc')
+            ->get();
+
+        return view('historial-clinico.reporte', compact('paciente', 'historiales'));
     }
 
     /**
@@ -203,14 +418,19 @@ class HistorialClinicoController extends Controller
      */
     public function paciente()
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
         
-        if (!$user->isPaciente()) {
+        if (!$usuario->isPaciente()) {
             return redirect()->route('dashboard')->with('error', 'Acceso denegado.');
         }
 
-        $historiales = HistorialClinico::with(['diagnostico', 'tratamiento'])
-            ->where('id_paciente', $user->paciente->id_paciente)
+        $historiales = HistorialClinico::with([
+            'medico.usuario', 
+            'diagnostico.catalogoDiagnostico', 
+            'tratamiento'
+        ])
+            ->where('id_paciente', $usuario->paciente->id_paciente)
+            ->orderBy('fecha_evento', 'desc')
             ->orderBy('fecha_registro', 'desc')
             ->paginate(15);
 

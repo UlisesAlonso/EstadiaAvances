@@ -24,6 +24,7 @@ class Actividad extends Model
         'id_medico',
         'completada',
         'comentarios_paciente',
+        'comentarios_medico',
     ];
 
     protected $casts = [

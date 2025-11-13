@@ -14,7 +14,7 @@
                         <p class="text-gray-600">Modifica la información del diagnóstico médico</p>
                     </div>
                     <div class="flex space-x-3">
-                        <a href="{{ route('medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
+                        <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.show' : 'medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -22,7 +22,7 @@
                             </svg>
                             Ver Diagnóstico
                         </a>
-                        <a href="{{ route('medico.diagnosticos.index') }}" 
+                        <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index') }}" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -33,7 +33,7 @@
                 </div>
 
                 <!-- Formulario -->
-                <form method="POST" action="{{ route('medico.diagnosticos.update', $diagnostico->id_diagnostico) }}" class="space-y-6">
+                <form method="POST" action="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.update' : 'medico.diagnosticos.update', $diagnostico->id_diagnostico) }}" class="space-y-6">
                     @csrf
                     @method('PUT')
                     
@@ -46,6 +46,51 @@
                                 - {{ $diagnostico->paciente->usuario->correo }}
                             </div>
                             <p class="mt-1 text-sm text-gray-500">El paciente no puede ser cambiado una vez creado el diagnóstico</p>
+                        </div>
+
+                        <!-- Catálogo de Diagnóstico -->
+                        <div class="md:col-span-2">
+                            <label for="id_PDiag" class="block text-sm font-medium text-gray-700 mb-2">
+                                Diagnóstico del Catálogo *
+                            </label>
+                            <select name="id_PDiag" 
+                                    id="id_PDiag"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('id_PDiag') border-red-500 @enderror">
+                                <option value="">Selecciona un diagnóstico del catálogo</option>
+                                @php
+                                    $categoriaActual = '';
+                                @endphp
+                                @foreach($catalogoDiagnosticos as $catalogo)
+                                    @if($categoriaActual !== $catalogo->categoria_medica)
+                                        @if($categoriaActual !== '')
+                                            </optgroup>
+                                        @endif
+                                        <optgroup label="{{ $catalogo->categoria_medica }}">
+                                        @php
+                                            $categoriaActual = $catalogo->categoria_medica;
+                                        @endphp
+                                    @endif
+                                    <option value="{{ $catalogo->id_diagnostico }}" 
+                                            {{ old('id_PDiag', $diagnostico->id_PDiag) == $catalogo->id_diagnostico ? 'selected' : '' }}>
+                                        {{ $catalogo->codigo ? $catalogo->codigo . ' - ' : '' }}{{ $catalogo->descripcion_clinica }}
+                                    </option>
+                                @endforeach
+                                @if($categoriaActual !== '')
+                                    </optgroup>
+                                @endif
+                            </select>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Si no encuentras el diagnóstico, puedes 
+                                <a href="{{ route(Auth::user()->isAdmin() ? 'admin.catalogo-diagnosticos.create' : 'medico.catalogo-diagnosticos.create') }}" 
+                                   class="text-blue-600 hover:text-blue-800 underline" 
+                                   target="_blank">
+                                    agregar uno nuevo al catálogo
+                                </a>
+                            </p>
+                            @error('id_PDiag')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Fecha -->
@@ -111,7 +156,7 @@
 
                     <!-- Botones -->
                     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                        <a href="{{ route('medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
+                        <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.show' : 'medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
                            class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                             Cancelar
                         </a>

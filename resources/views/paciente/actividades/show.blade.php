@@ -127,7 +127,15 @@
                         @if($actividad->comentarios_paciente)
                         <div class="bg-yellow-50 rounded-lg p-6">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Tus Comentarios</h3>
-                            <p class="text-sm text-gray-900">{{ $actividad->comentarios_paciente }}</p>
+                            <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $actividad->comentarios_paciente }}</p>
+                        </div>
+                        @endif
+
+                        <!-- Comentarios del médico -->
+                        @if($actividad->comentarios_medico)
+                        <div class="bg-blue-50 rounded-lg p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Comentarios del Médico</h3>
+                            <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $actividad->comentarios_medico }}</p>
                         </div>
                         @endif
                     </div>

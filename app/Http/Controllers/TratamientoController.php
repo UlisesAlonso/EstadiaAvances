@@ -5,15 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Tratamiento;
 use App\Models\Paciente;
 use App\Models\Diagnostico;
+use App\Models\CatalogoDiagnostico;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-<<<<<<< HEAD
 use Illuminate\Support\Facades\Mail;
 use App\Mail\CambioTratamiento;
-=======
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
 
 class TratamientoController extends Controller
 {
@@ -26,7 +24,7 @@ class TratamientoController extends Controller
         
         if ($user->isMedico()) {
             // Médicos ven sus tratamientos
-            $tratamientos = Tratamiento::with(['paciente.usuario', 'diagnostico'])
+            $tratamientos = Tratamiento::with(['paciente.usuario', 'diagnostico.catalogoDiagnostico'])
                 ->where('id_medico', $user->medico->id_medico)
                 ->when($request->filled('estado'), function($query) use ($request) {
                     return $query->where('activo', $request->estado === 'activo');
@@ -40,7 +38,7 @@ class TratamientoController extends Controller
                 ->paginate(15);
         } else {
             // Pacientes ven sus propios tratamientos
-            $tratamientos = Tratamiento::with(['medico.usuario', 'diagnostico'])
+            $tratamientos = Tratamiento::with(['medico.usuario', 'diagnostico.catalogoDiagnostico'])
                 ->where('id_paciente', $user->paciente->id_paciente)
                 ->orderBy('fecha_inicio', 'desc')
                 ->paginate(15);
@@ -57,17 +55,13 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
-        $diagnosticos = Diagnostico::where('id_medico', $user->medico->id_medico)->get();
+        $catalogoDiagnosticos = CatalogoDiagnostico::orderBy('categoria_medica')->orderBy('descripcion_clinica')->get();
 
-        return view('tratamientos.create', compact('pacientes', 'diagnosticos'));
+        return view('tratamientos.create', compact('pacientes', 'catalogoDiagnosticos'));
     }
 
     /**
@@ -78,16 +72,12 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden crear tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
             'id_paciente' => 'required|exists:pacientes,id_paciente',
-            'id_diagnostico' => 'required|exists:diagnosticos,id_diagnostico',
+            'id_PDiag' => 'required|exists:catalogo_diagnosticos,id_diagnostico',
             'nombre' => 'required|string|max:255',
             'dosis' => 'required|string|max:255',
             'frecuencia' => 'required|string|max:255',
@@ -100,10 +90,31 @@ class TratamientoController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // Crear o buscar un diagnóstico basado en el catálogo seleccionado
+        $catalogoDiagnostico = CatalogoDiagnostico::findOrFail($request->id_PDiag);
+        
+        // Buscar si ya existe un diagnóstico para este paciente con este catálogo
+        $diagnostico = Diagnostico::where('id_paciente', $request->id_paciente)
+            ->where('id_medico', $user->medico->id_medico)
+            ->where('id_PDiag', $request->id_PDiag)
+            ->whereDate('fecha', $request->fecha_inicio)
+            ->first();
+
+        // Si no existe, crear uno nuevo
+        if (!$diagnostico) {
+            $diagnostico = Diagnostico::create([
+                'id_paciente' => $request->id_paciente,
+                'id_medico' => $user->medico->id_medico,
+                'id_PDiag' => $request->id_PDiag,
+                'fecha' => $request->fecha_inicio,
+                'descripcion' => $catalogoDiagnostico->descripcion_clinica,
+            ]);
+        }
+
         $tratamiento = Tratamiento::create([
             'id_paciente' => $request->id_paciente,
             'id_medico' => $user->medico->id_medico,
-            'id_diagnostico' => $request->id_diagnostico,
+            'id_diagnostico' => $diagnostico->id_diagnostico,
             'nombre' => $request->nombre,
             'dosis' => $request->dosis,
             'frecuencia' => $request->frecuencia,
@@ -113,11 +124,7 @@ class TratamientoController extends Controller
             'activo' => true,
         ]);
 
-<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento creado exitosamente.');
-=======
-        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento creado exitosamente.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -126,23 +133,15 @@ class TratamientoController extends Controller
     public function show($id)
     {
         $user = Auth::user();
-        $tratamiento = Tratamiento::with(['paciente.usuario', 'medico.usuario', 'diagnostico'])->findOrFail($id);
+        $tratamiento = Tratamiento::with(['paciente.usuario', 'medico.usuario', 'diagnostico.catalogoDiagnostico'])->findOrFail($id);
 
         // Verificar permisos
         if ($user->isPaciente() && $tratamiento->id_paciente !== $user->paciente->id_paciente) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
         }
 
         if ($user->isMedico() && $tratamiento->id_medico !== $user->medico->id_medico) {
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
-        }
-
-        if ($user->isMedico() && $tratamiento->id_medico !== $user->medico->id_medico) {
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para ver este tratamiento.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         return view('tratamientos.show', compact('tratamiento'));
@@ -156,27 +155,22 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $pacientes = Paciente::with('usuario')->get();
-        $diagnosticos = Diagnostico::where('id_medico', $user->medico->id_medico)->get();
+        $catalogoDiagnosticos = CatalogoDiagnostico::orderBy('categoria_medica')->orderBy('descripcion_clinica')->get();
+        
+        // Cargar el diagnóstico con su catálogo para obtener el id_PDiag actual
+        $tratamiento->load('diagnostico.catalogoDiagnostico');
 
-        return view('tratamientos.edit', compact('tratamiento', 'pacientes', 'diagnosticos'));
+        return view('tratamientos.edit', compact('tratamiento', 'pacientes', 'catalogoDiagnosticos'));
     }
 
     /**
@@ -187,21 +181,13 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden editar tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para editar este tratamiento.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $validator = Validator::make($request->all(), [
@@ -218,15 +204,10 @@ class TratamientoController extends Controller
         }
 
         $tratamiento->update($request->all());
-<<<<<<< HEAD
         Mail::to($tratamiento->paciente->usuario->correo) 
                 ->send(new CambioTratamiento($tratamiento, $tratamiento->paciente->usuario));
 
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento actualizado exitosamente.');
-=======
-
-        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento actualizado exitosamente.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -237,30 +218,18 @@ class TratamientoController extends Controller
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden eliminar tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden eliminar tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para eliminar este tratamiento.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para eliminar este tratamiento.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento->delete();
 
-<<<<<<< HEAD
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento eliminado exitosamente.');
-=======
-        return redirect()->route('tratamientos.index')->with('success', 'Tratamiento eliminado exitosamente.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 
     /**
@@ -283,7 +252,6 @@ class TratamientoController extends Controller
     }
 
     /**
-<<<<<<< HEAD
      * Método para pacientes ver detalles de un tratamiento
      */
     public function pacienteShow($id)
@@ -303,26 +271,18 @@ class TratamientoController extends Controller
 
     /**
      * Cambiar estado del tratamiento (finalizar o suspender)
-=======
-     * Cambiar estado del tratamiento
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
      */
     public function toggleStatus($id)
     {
         $user = Auth::user();
         
         if (!$user->isMedico()) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'Solo los médicos pueden cambiar el estado de tratamientos.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'Solo los médicos pueden cambiar el estado de tratamientos.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
         }
 
         $tratamiento = Tratamiento::findOrFail($id);
         
         if ($tratamiento->id_medico !== $user->medico->id_medico) {
-<<<<<<< HEAD
             return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('error', 'No tienes permisos para modificar este tratamiento.');
         }
 
@@ -359,13 +319,5 @@ class TratamientoController extends Controller
         $tratamiento->update(['activo' => false]);
 
         return redirect()->route($user->isAdmin() ? 'admin.tratamientos.index' : 'medico.tratamientos.index')->with('success', 'Tratamiento finalizado exitosamente.');
-=======
-            return redirect()->route('tratamientos.index')->with('error', 'No tienes permisos para modificar este tratamiento.');
-        }
-
-        $tratamiento->update(['activo' => !$tratamiento->activo]);
-
-        return redirect()->route('tratamientos.index')->with('success', 'Estado del tratamiento actualizado exitosamente.');
->>>>>>> d72736d2d2666449d7a4d7da99acaf587a6c4dd8
     }
 }

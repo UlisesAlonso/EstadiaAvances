@@ -22,12 +22,8 @@ class ActividadController extends Controller
             return redirect()->route('dashboard')->with('error', 'No tienes permisos para acceder a esta sección.');
         }
 
+        // Los médicos ven todas las actividades
         $query = Actividad::with(['paciente.usuario', 'medico.usuario']);
-        
-        // Filtro por médico (solo para médicos)
-        if ($user->isMedico()) {
-            $query->where('id_medico', $user->medico->id_medico);
-        }
         
         // Filtros de búsqueda
         if ($request->filled('paciente')) {
@@ -88,11 +84,8 @@ class ActividadController extends Controller
      */
     private function getActivityStats($user)
     {
+        // Los médicos ven estadísticas de todas las actividades
         $query = Actividad::query();
-        
-        if ($user->isMedico()) {
-            $query->where('id_medico', $user->medico->id_medico);
-        }
         
         $total = $query->count();
         $completadas = $query->where('completada', true)->count();
@@ -121,6 +114,7 @@ class ActividadController extends Controller
             return redirect()->route('dashboard')->with('error', 'Solo los médicos y administradores pueden crear actividades.');
         }
 
+        // Obtener todos los pacientes (médicos y admin ven todos)
         $pacientes = Paciente::with('usuario')->get();
         
         return view('actividades.create', compact('pacientes'));
@@ -215,10 +209,7 @@ class ActividadController extends Controller
 
         $actividad = Actividad::findOrFail($id);
         
-        // Los médicos solo pueden editar sus propias actividades
-        if ($user->isMedico() && $actividad->id_medico !== $user->medico->id_medico) {
-            return redirect()->route($user->isAdmin() ? 'admin.actividades.index' : 'medico.actividades.index')->with('error', 'No tienes permisos para editar esta actividad.');
-        }
+        // Los médicos pueden editar todas las actividades
 
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|max:100',
@@ -229,6 +220,7 @@ class ActividadController extends Controller
             'periodicidad' => 'required|string|max:50',
             'id_paciente' => 'required|exists:pacientes,id_paciente',
             'completada' => 'nullable|boolean',
+            'comentarios_medico' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -253,10 +245,7 @@ class ActividadController extends Controller
 
         $actividad = Actividad::findOrFail($id);
         
-        // Los médicos solo pueden eliminar sus propias actividades
-        if ($user->isMedico() && $actividad->id_medico !== $user->medico->id_medico) {
-            return redirect()->route($user->isAdmin() ? 'admin.actividades.index' : 'medico.actividades.index')->with('error', 'No tienes permisos para eliminar esta actividad.');
-        }
+        // Los médicos pueden eliminar todas las actividades
 
         $actividad->delete();
 
@@ -276,9 +265,7 @@ class ActividadController extends Controller
 
         $actividad = Actividad::findOrFail($id);
         
-        if ($actividad->id_medico !== $user->medico->id_medico) {
-            return redirect()->route($user->isAdmin() ? 'admin.actividades.index' : 'medico.actividades.index')->with('error', 'No tienes permisos para modificar esta actividad.');
-        }
+        // Los médicos pueden cambiar el estado de todas las actividades
 
         $actividad->update(['completada' => !$actividad->completada]);
 
@@ -299,13 +286,9 @@ class ActividadController extends Controller
         
         $paciente = Paciente::with('usuario')->findOrFail($idPaciente);
         
+        // Los médicos ven todas las actividades del paciente
         $query = Actividad::with(['paciente.usuario', 'medico.usuario'])
             ->where('id_paciente', $idPaciente);
-        
-        // Filtro por médico (solo para médicos)
-        if ($user->isMedico()) {
-            $query->where('id_medico', $user->medico->id_medico);
-        }
         
         // Filtros adicionales
         if ($request->filled('estado')) {
@@ -340,11 +323,8 @@ class ActividadController extends Controller
      */
     private function getPatientActivityStats($idPaciente, $user)
     {
+        // Los médicos ven estadísticas de todas las actividades del paciente
         $query = Actividad::where('id_paciente', $idPaciente);
-        
-        if ($user->isMedico()) {
-            $query->where('id_medico', $user->medico->id_medico);
-        }
         
         $total = $query->count();
         $completadas = $query->where('completada', true)->count();

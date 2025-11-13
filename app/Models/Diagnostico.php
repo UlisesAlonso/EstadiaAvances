@@ -16,6 +16,7 @@ class Diagnostico extends Model
     protected $fillable = [
         'id_paciente',
         'id_medico',
+        'id_PDiag',
         'fecha',
         'descripcion',
     ];
@@ -38,5 +39,10 @@ class Diagnostico extends Model
     public function tratamientos()
     {
         return $this->hasMany(Tratamiento::class, 'id_diagnostico', 'id_diagnostico');
+    }
+
+    public function catalogoDiagnostico()
+    {
+        return $this->belongsTo(CatalogoDiagnostico::class, 'id_PDiag', 'id_diagnostico');
     }
 } 

@@ -52,29 +52,51 @@
                             @enderror
                         </div>
 
-                        <!-- Diagnóstico -->
+                        <!-- Diagnóstico del Catálogo -->
                         <div class="md:col-span-2">
-                            <label for="id_diagnostico" class="block text-sm font-medium text-gray-700 mb-2">
-                                Diagnóstico Relacionado <span class="text-red-500">*</span>
+                            <label for="id_PDiag" class="block text-sm font-medium text-gray-700 mb-2">
+                                Diagnóstico del Catálogo <span class="text-red-500">*</span>
                             </label>
-                            <select name="id_diagnostico" 
-                                    id="id_diagnostico"
+                            <select name="id_PDiag" 
+                                    id="id_PDiag"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('id_diagnostico') border-red-500 @enderror">
-                                <option value="">Seleccione un diagnóstico</option>
-                                @if(isset($diagnosticos) && $diagnosticos->count() > 0)
-                                    @foreach($diagnosticos as $diagnostico)
-                                        <option value="{{ $diagnostico->id_diagnostico }}" 
-                                                {{ old('id_diagnostico') == $diagnostico->id_diagnostico ? 'selected' : '' }}>
-                                            {{ $diagnostico->descripcion }} - {{ $diagnostico->fecha->format('d/m/Y') }}
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('id_PDiag') border-red-500 @enderror">
+                                <option value="">Seleccione un diagnóstico del catálogo</option>
+                                @if(isset($catalogoDiagnosticos) && $catalogoDiagnosticos->count() > 0)
+                                    @php
+                                        $categoriaActual = '';
+                                    @endphp
+                                    @foreach($catalogoDiagnosticos as $catalogo)
+                                        @if($categoriaActual !== $catalogo->categoria_medica)
+                                            @if($categoriaActual !== '')
+                                                </optgroup>
+                                            @endif
+                                            <optgroup label="{{ $catalogo->categoria_medica }}">
+                                            @php
+                                                $categoriaActual = $catalogo->categoria_medica;
+                                            @endphp
+                                        @endif
+                                        <option value="{{ $catalogo->id_diagnostico }}" 
+                                                {{ old('id_PDiag') == $catalogo->id_diagnostico ? 'selected' : '' }}>
+                                            {{ $catalogo->codigo ? $catalogo->codigo . ' - ' : '' }}{{ $catalogo->descripcion_clinica }}
                                         </option>
                                     @endforeach
+                                    @if($categoriaActual !== '')
+                                        </optgroup>
+                                    @endif
                                 @else
-                                    <option value="" disabled>No hay diagnósticos disponibles</option>
+                                    <option value="" disabled>No hay diagnósticos disponibles en el catálogo</option>
                                 @endif
                             </select>
-                            <p class="mt-1 text-sm text-gray-500">Puedes crear el tratamiento sin diagnóstico y asociarlo después</p>
-                            @error('id_diagnostico')
+                            <p class="mt-1 text-sm text-gray-500">
+                                Selecciona un diagnóstico del catálogo. Si no encuentras el diagnóstico, puedes 
+                                <a href="{{ route(Auth::user()->isAdmin() ? 'admin.catalogo-diagnosticos.create' : 'medico.catalogo-diagnosticos.create') }}" 
+                                   class="text-blue-600 hover:text-blue-800 underline" 
+                                   target="_blank">
+                                    agregar uno nuevo al catálogo
+                                </a>
+                            </p>
+                            @error('id_PDiag')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -199,17 +221,4 @@
     </div>
 </div>
 
-<script>
-// Script para cargar diagnósticos según el paciente seleccionado
-document.getElementById('id_paciente').addEventListener('change', function() {
-    const pacienteId = this.value;
-    const diagnosticoSelect = document.getElementById('id_diagnostico');
-    
-    if (pacienteId) {
-        // Aquí podrías hacer una llamada AJAX para cargar los diagnósticos del paciente
-        // Por ahora, mostraremos todos los diagnósticos disponibles
-        console.log('Paciente seleccionado:', pacienteId);
-    }
-});
-</script>
 @endsection

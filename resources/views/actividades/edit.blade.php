@@ -186,6 +186,22 @@
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        <!-- Comentarios del médico -->
+                        <div class="md:col-span-2">
+                            <label for="comentarios_medico" class="block text-sm font-medium text-gray-700 mb-2">
+                                Comentarios del Médico
+                            </label>
+                            <textarea name="comentarios_medico" 
+                                      id="comentarios_medico"
+                                      rows="4"
+                                      placeholder="Agrega comentarios, observaciones o respuestas para el paciente..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('comentarios_medico') border-red-500 @enderror">{{ old('comentarios_medico', $actividad->comentarios_medico) }}</textarea>
+                            @error('comentarios_medico')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-sm text-gray-500">Estos comentarios serán visibles para el paciente</p>
+                        </div>
                     </div>
 
                     <!-- Botones -->

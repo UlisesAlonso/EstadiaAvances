@@ -14,7 +14,7 @@
                         <p class="text-gray-600">Administra los diagnósticos médicos del sistema</p>
                     </div>
                     <div class="flex space-x-3">
-                        <a href="{{ route('medico.diagnosticos.create') }}" 
+                        <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.create' : 'medico.diagnosticos.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -33,7 +33,7 @@
 
                 <!-- Filtros -->
                 <div class="mb-6 bg-gray-50 p-4 rounded-lg">
-                    <form method="GET" action="{{ route('medico.diagnosticos.index') }}" class="space-y-4">
+                    <form method="GET" action="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index') }}" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="paciente" class="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
@@ -66,7 +66,7 @@
                         </div>
                         
                         <div class="flex justify-between items-center">
-                            <a href="{{ route('medico.diagnosticos.index') }}" 
+                            <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.index' : 'medico.diagnosticos.index') }}" 
                                class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                                 <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -83,6 +83,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnóstico (Catálogo)</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
                                 @if(Auth::user()->isAdmin())
@@ -113,6 +114,23 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td class="px-6 py-4">
+                                        @if($diagnostico->catalogoDiagnostico)
+                                            <div class="text-sm">
+                                                <span class="font-medium text-gray-900">
+                                                    {{ $diagnostico->catalogoDiagnostico->codigo ? $diagnostico->catalogoDiagnostico->codigo . ' - ' : '' }}
+                                                    {{ Str::limit($diagnostico->catalogoDiagnostico->descripcion_clinica, 60) }}
+                                                </span>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    <span class="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                                        {{ $diagnostico->catalogoDiagnostico->categoria_medica }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <span class="text-sm text-gray-400">No especificado</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {{ $diagnostico->fecha->format('d/m/Y') }}
                                     </td>
@@ -126,7 +144,7 @@
                                     @endif
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex space-x-2">
-                                            <a href="{{ route('medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
+                                            <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.show' : 'medico.diagnosticos.show', $diagnostico->id_diagnostico) }}" 
                                                class="text-blue-600 hover:text-blue-900"
                                                title="Ver detalles">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,14 +152,14 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                                 </svg>
                                             </a>
-                                            <a href="{{ route('medico.diagnosticos.edit', $diagnostico->id_diagnostico) }}" 
+                                            <a href="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.edit' : 'medico.diagnosticos.edit', $diagnostico->id_diagnostico) }}" 
                                                class="text-yellow-600 hover:text-yellow-900"
                                                title="Editar diagnóstico">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                                 </svg>
                                             </a>
-                                            <form method="POST" action="{{ route('medico.diagnosticos.destroy', $diagnostico->id_diagnostico) }}" class="inline">
+                                            <form method="POST" action="{{ route(Auth::user()->isAdmin() ? 'admin.diagnosticos.destroy' : 'medico.diagnosticos.destroy', $diagnostico->id_diagnostico) }}" class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" 

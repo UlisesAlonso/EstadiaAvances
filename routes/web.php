@@ -12,6 +12,7 @@ use App\Http\Controllers\DiagnosticoController;
 use App\Http\Controllers\HistorialClinicoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MedicoPacienteController;
+use App\Http\Controllers\CatalogoDiagnosticoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,18 +27,32 @@ Route::get('/test', function () {
 
 // Rutas de autenticación
 Route::get('/', function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+        // Redirigir según el rol
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->isMedico()) {
+            return redirect()->route('medico.dashboard');
+        } else {
+            return redirect()->route('paciente.dashboard');
+        }
+    }
     return redirect()->route('login');
 });
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    
+    // Recuperación de contraseña
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+    Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+});
 
-// Recuperación de contraseña
-Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
-Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rutas para manejo de sesión
 Route::get('/check-session', function() {
@@ -85,6 +100,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/actividades/{id}/toggle-completada', [ActividadController::class, 'toggleCompletada'])->name('actividades.toggle-completada');
         Route::get('/actividades/por-paciente/{idPaciente}', [ActividadController::class, 'porPaciente'])->name('actividades.por-paciente');
         Route::resource('diagnosticos', DiagnosticoController::class);
+        Route::resource('catalogo-diagnosticos', CatalogoDiagnosticoController::class);
     });
     
     // Rutas de médico
@@ -101,7 +117,10 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/actividades/{id}/toggle-completada', [ActividadController::class, 'toggleCompletada'])->name('actividades.toggle-completada');
         Route::get('/actividades/por-paciente/{idPaciente}', [ActividadController::class, 'porPaciente'])->name('actividades.por-paciente');
         Route::resource('diagnosticos', DiagnosticoController::class);
+        Route::resource('catalogo-diagnosticos', CatalogoDiagnosticoController::class);
         Route::resource('historial-clinico', HistorialClinicoController::class);
+        Route::post('/historial-clinico/{id}/cerrar', [HistorialClinicoController::class, 'cerrar'])->name('historial-clinico.cerrar');
+        Route::get('/historial-clinico/reporte/{id_paciente?}', [HistorialClinicoController::class, 'reporte'])->name('historial-clinico.reporte');
         Route::resource('pacientes', MedicoPacienteController::class);
         Route::post('/pacientes/{id}/toggle-status', [MedicoPacienteController::class, 'toggleStatus'])->name('pacientes.toggle-status');
     });
