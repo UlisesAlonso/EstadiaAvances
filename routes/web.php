@@ -13,6 +13,7 @@ use App\Http\Controllers\HistorialClinicoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MedicoPacienteController;
 use App\Http\Controllers\CatalogoDiagnosticoController;
+use App\Http\Controllers\BackupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,6 +80,8 @@ Route::post('/extend-session', function() {
     return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
 })->name('session.extend');
 
+// Rutas para enviar recordatorio de cita
+Route::get('/enviar-recordatorio-cita', [CitaController::class, 'enviarRecordatorioCita'])->name('enviar-recordatorio-cita');
 // Rutas protegidas
 Route::middleware(['auth', 'session.timeout'])->group(function () {
     
@@ -93,6 +96,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         
         // Gestión médica para administradores
+        Route::resource('citas', CitaController::class);
         Route::resource('tratamientos', TratamientoController::class);
         Route::post('/tratamientos/{id}/toggle-status', [TratamientoController::class, 'toggleStatus'])->name('tratamientos.toggle-status');
         Route::post('/tratamientos/{id}/finalizar', [TratamientoController::class, 'finalizar'])->name('tratamientos.finalizar');
@@ -101,6 +105,13 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/actividades/por-paciente/{idPaciente}', [ActividadController::class, 'porPaciente'])->name('actividades.por-paciente');
         Route::resource('diagnosticos', DiagnosticoController::class);
         Route::resource('catalogo-diagnosticos', CatalogoDiagnosticoController::class);
+    });
+    
+    // Rutas de respaldo y restauración
+    Route::middleware(['admin.access'])->prefix('backup')->name('backup.')->group(function () {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+        Route::post('/restore', [BackupController::class, 'restore'])->name('restore');
+        Route::get('/respaldo', [BackupController::class, 'respaldo'])->name('respaldo');
     });
     
     // Rutas de médico
@@ -154,3 +165,4 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
         return \App\Models\Medico::distinct()->pluck('especialidad');
     })->name('especialidades');
 });
+

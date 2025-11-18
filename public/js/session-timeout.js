@@ -23,8 +23,7 @@ class TimeoutSesion {
             return;
         }
 
-        console.log('✅ Sistema de timeout iniciado - 5 min timeout, 30s alerta');
-
+            
         this.configurarEventos();
         this.iniciarMonitoreoActividad();
         this.verificarEstadoSesion();
