@@ -38,8 +38,17 @@ class CheckRole
         
         // Verificación estándar para otros casos
         if (!in_array($user->rol, $roles)) {
-            return redirect()->route('dashboard')
-                           ->with('error', 'No tienes permisos para acceder a esta sección.');
+            // Redirigir al dashboard según el rol del usuario
+            if ($user->isAdmin()) {
+                return redirect()->route('admin.dashboard')
+                               ->with('error', 'No tienes permisos para acceder a esta sección.');
+            } elseif ($user->isMedico()) {
+                return redirect()->route('medico.dashboard')
+                               ->with('error', 'No tienes permisos para acceder a esta sección.');
+            } else {
+                return redirect()->route('paciente.dashboard')
+                               ->with('error', 'No tienes permisos para acceder a esta sección.');
+            }
         }
 
         return $next($request);

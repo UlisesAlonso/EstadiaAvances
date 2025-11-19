@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('preguntas', function (Blueprint $table) {
             $table->id('id_pregunta');
             $table->text('texto');
-            $table->enum('tipo', ['abierta', 'cerrada']);
+            $table->enum('tipo', ['abierta', 'opcion_multiple']);
             $table->string('categoria', 100);
         });
     }

@@ -16,12 +16,17 @@ class Respuesta extends Model
     protected $fillable = [
         'id_pregunta',
         'id_usuario',
+        'id_paciente',
         'respuesta',
         'fecha',
+        'fecha_hora',
+        'cumplimiento',
     ];
 
     protected $casts = [
         'fecha' => 'date',
+        'fecha_hora' => 'datetime',
+        'cumplimiento' => 'boolean',
     ];
 
     // Relaciones
@@ -33,5 +38,10 @@ class Respuesta extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function paciente()
+    {
+        return $this->belongsTo(Paciente::class, 'id_paciente', 'id_paciente');
     }
 } 

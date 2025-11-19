@@ -14,6 +14,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MedicoPacienteController;
 use App\Http\Controllers\CatalogoDiagnosticoController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\PreguntaController;
+use App\Http\Controllers\AnalisisClinicoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +107,16 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/actividades/por-paciente/{idPaciente}', [ActividadController::class, 'porPaciente'])->name('actividades.por-paciente');
         Route::resource('diagnosticos', DiagnosticoController::class);
         Route::resource('catalogo-diagnosticos', CatalogoDiagnosticoController::class);
+        Route::resource('preguntas', PreguntaController::class);
+        Route::get('/preguntas/reporte/{id_paciente?}', [PreguntaController::class, 'reporte'])->name('preguntas.reporte');
+        Route::resource('analisis-clinicos', AnalisisClinicoController::class);
+    });
+    
+    // Rutas de respaldo y restauración
+    Route::middleware(['admin.access'])->prefix('backup')->name('backup.')->group(function () {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+        Route::post('/restore', [BackupController::class, 'restore'])->name('restore');
+        Route::get('/respaldo', [BackupController::class, 'respaldo'])->name('respaldo');
     });
     
     // Rutas de respaldo y restauración
@@ -134,6 +146,9 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/historial-clinico/reporte/{id_paciente?}', [HistorialClinicoController::class, 'reporte'])->name('historial-clinico.reporte');
         Route::resource('pacientes', MedicoPacienteController::class);
         Route::post('/pacientes/{id}/toggle-status', [MedicoPacienteController::class, 'toggleStatus'])->name('pacientes.toggle-status');
+        Route::resource('preguntas', PreguntaController::class);
+        Route::get('/preguntas/reporte/{id_paciente?}', [PreguntaController::class, 'reporte'])->name('preguntas.reporte');
+        Route::resource('analisis-clinicos', AnalisisClinicoController::class);
     });
     
     // Rutas de paciente
@@ -148,6 +163,11 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/actividades/{id}', [ActividadController::class, 'pacienteShow'])->name('actividades.show');
         Route::post('/actividades/{id}/marcar-completada', [ActividadController::class, 'marcarCompletada'])->name('actividades.marcar-completada');
         Route::post('/actividades/{id}/agregar-comentario', [ActividadController::class, 'agregarComentario'])->name('actividades.agregar-comentario');
+        Route::get('/preguntas', [PreguntaController::class, 'paciente'])->name('preguntas.index');
+        Route::get('/preguntas/{id}', [PreguntaController::class, 'pacienteShow'])->name('preguntas.show');
+        Route::post('/preguntas/{id}/responder', [PreguntaController::class, 'responder'])->name('preguntas.responder');
+        Route::get('/analisis-clinicos', [AnalisisClinicoController::class, 'index'])->name('analisis-clinicos.index');
+        Route::get('/analisis-clinicos/{id}', [AnalisisClinicoController::class, 'show'])->name('analisis-clinicos.show');
     });
     
     // Rutas compartidas
