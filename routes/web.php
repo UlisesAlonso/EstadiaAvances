@@ -13,6 +13,9 @@ use App\Http\Controllers\HistorialClinicoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MedicoPacienteController;
 use App\Http\Controllers\CatalogoDiagnosticoController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\PreguntaController;
+use App\Http\Controllers\AnalisisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,6 +82,8 @@ Route::post('/extend-session', function() {
     return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
 })->name('session.extend');
 
+// Rutas para enviar recordatorio de cita
+Route::get('/enviar-recordatorio-cita', [CitaController::class, 'enviarRecordatorioCita'])->name('enviar-recordatorio-cita');
 // Rutas protegidas
 Route::middleware(['auth', 'session.timeout'])->group(function () {
     
@@ -93,6 +98,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         
         // Gestión médica para administradores
+        Route::resource('citas', CitaController::class);
         Route::resource('tratamientos', TratamientoController::class);
         Route::post('/tratamientos/{id}/toggle-status', [TratamientoController::class, 'toggleStatus'])->name('tratamientos.toggle-status');
         Route::post('/tratamientos/{id}/finalizar', [TratamientoController::class, 'finalizar'])->name('tratamientos.finalizar');
@@ -101,6 +107,16 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/actividades/por-paciente/{idPaciente}', [ActividadController::class, 'porPaciente'])->name('actividades.por-paciente');
         Route::resource('diagnosticos', DiagnosticoController::class);
         Route::resource('catalogo-diagnosticos', CatalogoDiagnosticoController::class);
+        Route::resource('preguntas', PreguntaController::class);
+        Route::get('/preguntas/reporte/{id_paciente?}', [PreguntaController::class, 'reporte'])->name('preguntas.reporte');
+        Route::resource('analisis', AnalisisController::class);
+    });
+    
+    // Rutas de respaldo y restauración
+    Route::middleware(['admin.access'])->prefix('backup')->name('backup.')->group(function () {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+        Route::post('/restore', [BackupController::class, 'restore'])->name('restore');
+        Route::get('/respaldo', [BackupController::class, 'respaldo'])->name('respaldo');
     });
     
     // Rutas de médico
@@ -121,6 +137,9 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('historial-clinico', HistorialClinicoController::class);
         Route::post('/historial-clinico/{id}/cerrar', [HistorialClinicoController::class, 'cerrar'])->name('historial-clinico.cerrar');
         Route::get('/historial-clinico/reporte/{id_paciente?}', [HistorialClinicoController::class, 'reporte'])->name('historial-clinico.reporte');
+        Route::resource('preguntas', PreguntaController::class);
+        Route::get('/preguntas/reporte/{id_paciente?}', [PreguntaController::class, 'reporte'])->name('preguntas.reporte');
+        Route::resource('analisis', AnalisisController::class);
         Route::resource('pacientes', MedicoPacienteController::class);
         Route::post('/pacientes/{id}/toggle-status', [MedicoPacienteController::class, 'toggleStatus'])->name('pacientes.toggle-status');
     });
@@ -137,6 +156,11 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/actividades/{id}', [ActividadController::class, 'pacienteShow'])->name('actividades.show');
         Route::post('/actividades/{id}/marcar-completada', [ActividadController::class, 'marcarCompletada'])->name('actividades.marcar-completada');
         Route::post('/actividades/{id}/agregar-comentario', [ActividadController::class, 'agregarComentario'])->name('actividades.agregar-comentario');
+        Route::get('/preguntas', [PreguntaController::class, 'paciente'])->name('preguntas.index');
+        Route::get('/preguntas/{id}', [PreguntaController::class, 'pacienteShow'])->name('preguntas.show');
+        Route::post('/preguntas/{id}/responder', [PreguntaController::class, 'responder'])->name('preguntas.responder');
+        Route::get('/analisis', [AnalisisController::class, 'paciente'])->name('analisis.index');
+        Route::get('/analisis/{id}', [AnalisisController::class, 'pacienteShow'])->name('analisis.show');
     });
     
     // Rutas compartidas
@@ -154,3 +178,4 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
         return \App\Models\Medico::distinct()->pluck('especialidad');
     })->name('especialidades');
 });
+

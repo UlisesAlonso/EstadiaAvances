@@ -17,11 +17,13 @@ class Respuesta extends Model
         'id_pregunta',
         'id_usuario',
         'respuesta',
-        'fecha',
+        'fecha_respuesta',
+        'cumplimiento',
     ];
 
     protected $casts = [
-        'fecha' => 'date',
+        'fecha_respuesta' => 'datetime',
+        'cumplimiento' => 'boolean',
     ];
 
     // Relaciones
@@ -33,5 +35,21 @@ class Respuesta extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
+
+    // Scopes
+    public function scopeCumplidas($query)
+    {
+        return $query->where('cumplimiento', true);
+    }
+
+    public function scopeNoCumplidas($query)
+    {
+        return $query->where('cumplimiento', false);
+    }
+
+    public function scopePorPaciente($query, $idUsuario)
+    {
+        return $query->where('id_usuario', $idUsuario);
     }
 } 

@@ -44,9 +44,6 @@ class AuthController extends Controller
 
         if ($user && Hash::check($request->contrasena, $user->contrasena)) {
             Auth::login($user);
-            
-            // Actualizar último acceso
-            $user->update(['ultimo_acceso' => now()]);
 
             // Redirigir según el rol
             if ($user->isAdmin()) {
