@@ -51,4 +51,9 @@ class Medico extends Model
         // Relación a través de diagnósticos
         return $this->hasManyThrough(HistorialClinico::class, Diagnostico::class, 'id_medico', 'id_diagnostico', 'id_medico', 'id_diagnostico');
     }
+
+    public function analisis()
+    {
+        return $this->hasMany(Analisis::class, 'id_medico', 'id_medico');
+    }
 } 

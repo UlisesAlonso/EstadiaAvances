@@ -113,4 +113,22 @@ class User extends Authenticatable
     {
         return trim($this->nombre . ' ' . $this->apPaterno . ' ' . $this->apMaterno);
     }
+
+    /**
+     * Obtener el valor del campo de contraseña para autenticación
+     * Laravel busca 'password' por defecto, pero nuestra tabla usa 'contrasena'
+     */
+    public function getAuthPassword()
+    {
+        return $this->contrasena;
+    }
+
+    /**
+     * Obtener el nombre del campo que se usa como identificador único (email)
+     * Laravel busca 'email' por defecto, pero nuestra tabla usa 'correo'
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'correo';
+    }
 }

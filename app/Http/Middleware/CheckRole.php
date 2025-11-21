@@ -36,8 +36,18 @@ class CheckRole
             return $next($request);
         }
         
+        // Procesar roles: si hay un string con comas, dividirlo
+        $rolesArray = [];
+        foreach ($roles as $role) {
+            if (strpos($role, ',') !== false) {
+                $rolesArray = array_merge($rolesArray, explode(',', $role));
+            } else {
+                $rolesArray[] = $role;
+            }
+        }
+        
         // Verificación estándar para otros casos
-        if (!in_array($user->rol, $roles)) {
+        if (!in_array($user->rol, $rolesArray)) {
             return redirect()->route('dashboard')
                            ->with('error', 'No tienes permisos para acceder a esta sección.');
         }

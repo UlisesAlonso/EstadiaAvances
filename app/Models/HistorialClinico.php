@@ -18,12 +18,22 @@ class HistorialClinico extends Model
         'id_medico',
         'id_diagnostico',
         'id_tratamiento',
+        'id_analisis',
         'observaciones',
         'fecha_registro',
         'fecha_evento',
         'resultados_analisis',
         'archivos_adjuntos',
         'estado',
+        // Antecedentes médicos
+        'alergias',
+        'enfermedades_familiares',
+        'cirugias_previas',
+        'consumo_tabaco',
+        'consumo_alcohol',
+        'realiza_ejercicio',
+        'tipo_alimentacion',
+        'observaciones_antecedentes',
     ];
 
     protected $casts = [
@@ -51,5 +61,10 @@ class HistorialClinico extends Model
     public function tratamiento()
     {
         return $this->belongsTo(Tratamiento::class, 'id_tratamiento', 'id_tratamiento');
+    }
+
+    public function analisis()
+    {
+        return $this->belongsTo(Analisis::class, 'id_analisis', 'id_analisis');
     }
 } 

@@ -49,4 +49,9 @@ class Paciente extends Model
     {
         return $this->hasMany(HistorialClinico::class, 'id_paciente', 'id_paciente');
     }
+
+    public function analisis()
+    {
+        return $this->hasMany(Analisis::class, 'id_paciente', 'id_paciente');
+    }
 } 

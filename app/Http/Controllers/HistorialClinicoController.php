@@ -7,6 +7,7 @@ use App\Models\Paciente;
 use App\Models\Diagnostico;
 use App\Models\Tratamiento;
 use App\Models\CatalogoDiagnostico;
+use App\Models\Analisis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -27,7 +28,8 @@ class HistorialClinicoController extends Controller
                 'paciente.usuario', 
                 'medico.usuario', 
                 'diagnostico.catalogoDiagnostico', 
-                'tratamiento'
+                'tratamiento',
+                'analisis'
             ]);
             
             // Filtro por nombre de paciente
@@ -66,7 +68,8 @@ class HistorialClinicoController extends Controller
                 'paciente.usuario', 
                 'medico.usuario', 
                 'diagnostico.catalogoDiagnostico', 
-                'tratamiento'
+                'tratamiento',
+                'analisis'
             ]);
             
             // Filtros para administrador
@@ -96,7 +99,8 @@ class HistorialClinicoController extends Controller
             $historiales = HistorialClinico::with([
                 'medico.usuario', 
                 'diagnostico.catalogoDiagnostico', 
-                'tratamiento'
+                'tratamiento',
+                'analisis'
             ])
                 ->where('id_paciente', $usuario->paciente->id_paciente)
                 ->orderBy('fecha_evento', 'desc')
@@ -116,12 +120,24 @@ class HistorialClinicoController extends Controller
     /**
      * Mostrar formulario para crear nuevo evento clínico
      */
-    public function create()
+    public function create(Request $solicitud)
     {
         $usuario = Auth::user();
         
         if (!$usuario->isMedico() && !$usuario->isAdmin()) {
             return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden crear registros de historial clínico.');
+        }
+
+        // Si es una petición AJAX, devolver JSON
+        if ($solicitud->ajax() || $solicitud->wantsJson()) {
+            $idPaciente = $solicitud->get('id_paciente');
+            if ($idPaciente) {
+                $existeHistorial = HistorialClinico::where('id_paciente', $idPaciente)->exists();
+                return response()->json([
+                    'es_primer_historial' => !$existeHistorial
+                ]);
+            }
+            return response()->json(['es_primer_historial' => false]);
         }
 
         // Obtener todos los pacientes (médicos y admin ven todos)
@@ -133,7 +149,19 @@ class HistorialClinicoController extends Controller
         // Obtener todos los tratamientos (médicos y admin ven todos)
         $tratamientos = Tratamiento::all();
 
-        return view('historial-clinico.create', compact('pacientes', 'diagnosticos', 'tratamientos'));
+        // Obtener todos los análisis para seleccionar
+        $analisis = Analisis::with(['paciente.usuario', 'medico.usuario'])->get();
+
+        // Verificar si hay un paciente seleccionado y si es su primer historial
+        $esPrimerHistorial = false;
+        $idPacienteSeleccionado = $solicitud->get('id_paciente');
+        
+        if ($idPacienteSeleccionado) {
+            $existeHistorial = HistorialClinico::where('id_paciente', $idPacienteSeleccionado)->exists();
+            $esPrimerHistorial = !$existeHistorial;
+        }
+
+        return view('historial-clinico.create', compact('pacientes', 'diagnosticos', 'tratamientos', 'analisis', 'esPrimerHistorial', 'idPacienteSeleccionado'));
     }
 
     /**
@@ -147,15 +175,33 @@ class HistorialClinicoController extends Controller
             return redirect()->route('historial-clinico.index')->with('error', 'Solo los médicos y administradores pueden crear registros de historial clínico.');
         }
 
-        $validador = Validator::make($solicitud->all(), [
+        // Verificar si es el primer historial del paciente
+        $esPrimerHistorial = !HistorialClinico::where('id_paciente', $solicitud->id_paciente)->exists();
+
+        $reglas = [
             'id_paciente' => 'required|exists:pacientes,id_paciente',
             'id_diagnostico' => 'nullable|exists:diagnosticos,id_diagnostico',
             'id_tratamiento' => 'nullable|exists:tratamientos,id_tratamiento',
+            'id_analisis' => 'nullable|exists:analisis,id_analisis',
             'fecha_evento' => 'required|date',
             'observaciones' => 'required|string|max:5000',
             'resultados_analisis' => 'nullable|string|max:5000',
             'archivos_adjuntos.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png',
-        ], [
+        ];
+
+        // Si es el primer historial, los antecedentes son opcionales pero recomendados
+        if ($esPrimerHistorial) {
+            $reglas['alergias'] = 'nullable|string|max:2000';
+            $reglas['enfermedades_familiares'] = 'nullable|string|max:2000';
+            $reglas['cirugias_previas'] = 'nullable|string|max:2000';
+            $reglas['consumo_tabaco'] = 'nullable|in:si,no,ex_fumador';
+            $reglas['consumo_alcohol'] = 'nullable|in:si,no,ocasional';
+            $reglas['realiza_ejercicio'] = 'nullable|in:si,no,ocasional';
+            $reglas['tipo_alimentacion'] = 'nullable|string|max:1000';
+            $reglas['observaciones_antecedentes'] = 'nullable|string|max:2000';
+        }
+
+        $validador = Validator::make($solicitud->all(), $reglas, [
             'id_paciente.required' => 'Debe seleccionar un paciente.',
             'id_paciente.exists' => 'El paciente seleccionado no existe.',
             'fecha_evento.required' => 'La fecha del evento es obligatoria.',
@@ -193,20 +239,39 @@ class HistorialClinicoController extends Controller
             $id_medico = $tratamiento ? $tratamiento->id_medico : null;
         }
 
-        $historial = HistorialClinico::create([
+        $datosHistorial = [
             'id_paciente' => $solicitud->id_paciente,
             'id_medico' => $id_medico,
             'id_diagnostico' => $solicitud->id_diagnostico,
             'id_tratamiento' => $solicitud->id_tratamiento,
+            'id_analisis' => $solicitud->id_analisis ?? null,
             'fecha_evento' => $solicitud->fecha_evento,
             'fecha_registro' => now(),
             'observaciones' => $solicitud->observaciones,
             'resultados_analisis' => $solicitud->resultados_analisis,
             'archivos_adjuntos' => !empty($archivos_adjuntos) ? $archivos_adjuntos : null,
             'estado' => 'activo',
-        ]);
+        ];
 
-        return redirect()->route('historial-clinico.index')->with('success', 'Evento clínico registrado exitosamente.');
+        // Si es el primer historial, agregar los antecedentes médicos
+        if ($esPrimerHistorial) {
+            $datosHistorial['alergias'] = $solicitud->alergias;
+            $datosHistorial['enfermedades_familiares'] = $solicitud->enfermedades_familiares;
+            $datosHistorial['cirugias_previas'] = $solicitud->cirugias_previas;
+            $datosHistorial['consumo_tabaco'] = $solicitud->consumo_tabaco;
+            $datosHistorial['consumo_alcohol'] = $solicitud->consumo_alcohol;
+            $datosHistorial['realiza_ejercicio'] = $solicitud->realiza_ejercicio;
+            $datosHistorial['tipo_alimentacion'] = $solicitud->tipo_alimentacion;
+            $datosHistorial['observaciones_antecedentes'] = $solicitud->observaciones_antecedentes;
+        }
+
+        $historial = HistorialClinico::create($datosHistorial);
+
+        $mensaje = $esPrimerHistorial 
+            ? 'Historial clínico inicial creado exitosamente con antecedentes médicos.' 
+            : 'Evento clínico registrado exitosamente.';
+
+        return redirect()->route('historial-clinico.index')->with('success', $mensaje);
     }
 
     /**
@@ -219,7 +284,8 @@ class HistorialClinicoController extends Controller
             'paciente.usuario', 
             'medico.usuario', 
             'diagnostico.catalogoDiagnostico', 
-            'tratamiento'
+            'tratamiento',
+            'analisis'
         ])->findOrFail($id);
 
         // Verificar permisos
@@ -256,7 +322,10 @@ class HistorialClinicoController extends Controller
         // Obtener todos los tratamientos (médicos y admin ven todos)
         $tratamientos = Tratamiento::all();
 
-        return view('historial-clinico.edit', compact('historial', 'pacientes', 'diagnosticos', 'tratamientos'));
+        // Obtener todos los análisis para seleccionar
+        $analisis = Analisis::with(['paciente.usuario', 'medico.usuario'])->get();
+
+        return view('historial-clinico.edit', compact('historial', 'pacientes', 'diagnosticos', 'tratamientos', 'analisis'));
     }
 
     /**
@@ -283,6 +352,7 @@ class HistorialClinicoController extends Controller
         $validador = Validator::make($solicitud->all(), [
             'id_diagnostico' => 'nullable|exists:diagnosticos,id_diagnostico',
             'id_tratamiento' => 'nullable|exists:tratamientos,id_tratamiento',
+            'id_analisis' => 'nullable|exists:analisis,id_analisis',
             'fecha_evento' => 'required|date',
             'observaciones' => 'required|string|max:5000',
             'resultados_analisis' => 'nullable|string|max:5000',
@@ -331,6 +401,7 @@ class HistorialClinicoController extends Controller
         $historial->update([
             'id_diagnostico' => $solicitud->id_diagnostico,
             'id_tratamiento' => $solicitud->id_tratamiento,
+            'id_analisis' => $solicitud->id_analisis ?? null,
             'fecha_evento' => $solicitud->fecha_evento,
             'observaciones' => $solicitud->observaciones,
             'resultados_analisis' => $solicitud->resultados_analisis,
@@ -389,7 +460,8 @@ class HistorialClinicoController extends Controller
         $consulta = HistorialClinico::with([
             'medico.usuario', 
             'diagnostico.catalogoDiagnostico', 
-            'tratamiento'
+            'tratamiento',
+            'analisis'
         ])
             ->where('id_paciente', $paciente->id_paciente);
 
@@ -427,7 +499,8 @@ class HistorialClinicoController extends Controller
         $historiales = HistorialClinico::with([
             'medico.usuario', 
             'diagnostico.catalogoDiagnostico', 
-            'tratamiento'
+            'tratamiento',
+            'analisis'
         ])
             ->where('id_paciente', $usuario->paciente->id_paciente)
             ->orderBy('fecha_evento', 'desc')

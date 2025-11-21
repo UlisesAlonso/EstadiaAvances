@@ -152,6 +152,35 @@
                     </div>
                 @endif
 
+                <!-- Análisis Relacionado -->
+                @if($historial->analisis)
+                    <div class="mb-6 bg-indigo-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">Análisis o Estudio Médico Relacionado</h3>
+                        <p class="text-lg font-semibold text-gray-900 mb-2">{{ $historial->analisis->tipo_estudio }}</p>
+                        @if($historial->analisis->descripcion)
+                            <p class="text-sm text-gray-700 mb-2">
+                                <span class="font-medium">Descripción:</span>
+                                {{ $historial->analisis->descripcion }}
+                            </p>
+                        @endif
+                        @if($historial->analisis->valores_obtenidos)
+                            <p class="text-sm text-gray-700 mb-2">
+                                <span class="font-medium">Valores Obtenidos:</span>
+                                {{ $historial->analisis->valores_obtenidos }}
+                            </p>
+                        @endif
+                        @if($historial->analisis->observaciones_clinicas)
+                            <p class="text-sm text-gray-700 mb-2">
+                                <span class="font-medium">Observaciones Clínicas:</span>
+                                {{ $historial->analisis->observaciones_clinicas }}
+                            </p>
+                        @endif
+                        <p class="text-sm text-gray-600">
+                            Fecha del análisis: {{ $historial->analisis->fecha_analisis ? $historial->analisis->fecha_analisis->format('d/m/Y') : 'No especificada' }}
+                        </p>
+                    </div>
+                @endif
+
                 <!-- Observaciones Médicas -->
                 <div class="mb-6 bg-yellow-50 p-4 rounded-lg">
                     <h3 class="text-sm font-medium text-gray-700 mb-2">Observaciones Médicas</h3>
@@ -163,6 +192,101 @@
                     <div class="mb-6 bg-purple-50 p-4 rounded-lg">
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Resultados de Análisis o Estudios Médicos</h3>
                         <p class="text-gray-900 whitespace-pre-wrap">{{ $historial->resultados_analisis }}</p>
+                    </div>
+                @endif
+
+                <!-- Antecedentes Médicos (solo si existen) -->
+                @if($historial->alergias || $historial->enfermedades_familiares || $historial->cirugias_previas || 
+                    $historial->consumo_tabaco || $historial->consumo_alcohol || $historial->realiza_ejercicio || 
+                    $historial->tipo_alimentacion || $historial->observaciones_antecedentes)
+                    <div class="mb-6 bg-orange-50 p-4 rounded-lg border-l-4 border-orange-400">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="h-5 w-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Antecedentes Médicos
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @if($historial->alergias)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Alergias</h4>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $historial->alergias }}</p>
+                                </div>
+                            @endif
+
+                            @if($historial->enfermedades_familiares)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Enfermedades Familiares Crónicas</h4>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $historial->enfermedades_familiares }}</p>
+                                </div>
+                            @endif
+
+                            @if($historial->cirugias_previas)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Cirugías Previas</h4>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $historial->cirugias_previas }}</p>
+                                </div>
+                            @endif
+
+                            @if($historial->consumo_tabaco)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Consumo de Tabaco</h4>
+                                    <p class="text-sm text-gray-900">
+                                        @if($historial->consumo_tabaco == 'si')
+                                            Sí
+                                        @elseif($historial->consumo_tabaco == 'no')
+                                            No
+                                        @else
+                                            Ex fumador
+                                        @endif
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if($historial->consumo_alcohol)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Consumo de Alcohol</h4>
+                                    <p class="text-sm text-gray-900">
+                                        @if($historial->consumo_alcohol == 'si')
+                                            Sí
+                                        @elseif($historial->consumo_alcohol == 'no')
+                                            No
+                                        @else
+                                            Ocasional
+                                        @endif
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if($historial->realiza_ejercicio)
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Realiza Ejercicio</h4>
+                                    <p class="text-sm text-gray-900">
+                                        @if($historial->realiza_ejercicio == 'si')
+                                            Sí
+                                        @elseif($historial->realiza_ejercicio == 'no')
+                                            No
+                                        @else
+                                            Ocasional
+                                        @endif
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if($historial->tipo_alimentacion)
+                                <div class="md:col-span-2">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Tipo de Alimentación</h4>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $historial->tipo_alimentacion }}</p>
+                                </div>
+                            @endif
+
+                            @if($historial->observaciones_antecedentes)
+                                <div class="md:col-span-2">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-1">Observaciones Adicionales</h4>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $historial->observaciones_antecedentes }}</p>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 @endif
 

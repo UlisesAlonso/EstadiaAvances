@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Paciente;
 use App\Models\Medico;
+use App\Models\CatalogoDiagnostico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -217,6 +218,13 @@ class UserController extends Controller
         
         // Eliminar historial clínico (solo como paciente, no como médico)
         $user->historialClinico()->delete();
+        
+        // Eliminar catálogo de diagnósticos creados o modificados por este usuario
+        // Esto es necesario porque la restricción de clave foránea impide eliminar el usuario
+        // mientras existan registros que lo referencian
+        CatalogoDiagnostico::where('id_usuario_creador', $user->id_usuario)
+            ->orWhere('id_usuario_modificador', $user->id_usuario)
+            ->delete();
         
         // Finalmente eliminar el usuario
         $user->delete();

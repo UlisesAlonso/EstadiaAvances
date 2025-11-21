@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Mail\ConfirmaCita;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\RecordatorioCita;
 
 class CitaController extends Controller
 {
@@ -84,7 +85,15 @@ class CitaController extends Controller
             return view('citas.create-medico', compact('pacientes'));
         }
 
-        return redirect()->route('citas.index')
+        $user = Auth::user();
+        if ($user->isMedico()) {
+            return redirect()->route('medico.citas.index')
+                        ->with('error', 'No tienes permisos para crear citas.');
+        } elseif ($user->isPaciente()) {
+            return redirect()->route('paciente.citas.index')
+                        ->with('error', 'No tienes permisos para crear citas.');
+        }
+        return redirect()->route('dashboard')
                         ->with('error', 'No tienes permisos para crear citas.');
     }
 
@@ -98,7 +107,14 @@ class CitaController extends Controller
             return $this->storeMedico($request, $user);
         }
 
-        return redirect()->route('citas.index')
+        if ($user->isMedico()) {
+            return redirect()->route('medico.citas.index')
+                        ->with('error', 'No tienes permisos para crear citas.');
+        } elseif ($user->isPaciente()) {
+            return redirect()->route('paciente.citas.index')
+                        ->with('error', 'No tienes permisos para crear citas.');
+        }
+        return redirect()->route('dashboard')
                         ->with('error', 'No tienes permisos para crear citas.');
     }
 
@@ -209,21 +225,34 @@ class CitaController extends Controller
         // Verificar permisos
         if ($user->isPaciente()) {
             if ($cita->id_paciente !== $user->paciente->id_paciente || !$cita->puedeSerModificada()) {
-                return redirect()->route('citas.index')
+                return redirect()->route('paciente.citas.index')
                                 ->with('error', 'No puedes editar esta cita.');
             }
             $medicos = Medico::with('usuario')->get();
             return view('citas.edit', compact('cita', 'medicos'));
         } elseif ($user->isMedico()) {
-            if ($cita->id_medico !== $user->medico->id_medico || !$cita->puedeSerModificada()) {
-                return redirect()->route('citas.index')
+            // Verificar que el médico tenga la relación cargada
+            if (!$user->medico) {
+                return redirect()->route('medico.dashboard')
+                                ->with('error', 'No tienes permisos para editar esta cita.');
+            }
+            
+            // Los médicos pueden editar cualquier cita que les pertenezca, sin restricción de estado
+            if ($cita->id_medico !== $user->medico->id_medico) {
+                return redirect()->route('medico.citas.index')
                                 ->with('error', 'No puedes editar esta cita.');
             }
             $pacientes = Paciente::with('usuario')->get();
             return view('citas.edit-medico', compact('cita', 'pacientes'));
         }
 
-        return redirect()->route('citas.index')
+        // Para administradores u otros roles
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard')
+                            ->with('error', 'No tienes permisos para editar esta cita.');
+        }
+
+        return redirect()->route('dashboard')
                         ->with('error', 'No tienes permisos para editar esta cita.');
     }
 
@@ -238,14 +267,21 @@ class CitaController extends Controller
             return $this->updateMedico($request, $cita, $user);
         }
 
-        return redirect()->route('citas.index')
+        if ($user->isMedico()) {
+            return redirect()->route('medico.citas.index')
+                        ->with('error', 'No tienes permisos para actualizar esta cita.');
+        } elseif ($user->isPaciente()) {
+            return redirect()->route('paciente.citas.index')
+                        ->with('error', 'No tienes permisos para actualizar esta cita.');
+        }
+        return redirect()->route('dashboard')
                         ->with('error', 'No tienes permisos para actualizar esta cita.');
     }
 
     private function updatePaciente(Request $request, $cita, $user)
     {
         if ($cita->id_paciente !== $user->paciente->id_paciente || !$cita->puedeSerModificada()) {
-            return redirect()->route('citas.index')
+            return redirect()->route('paciente.citas.index')
                             ->with('error', 'No puedes actualizar esta cita.');
         }
 
@@ -288,8 +324,10 @@ class CitaController extends Controller
 
     private function updateMedico(Request $request, $cita, $user)
     {
-        if ($cita->id_medico !== $user->medico->id_medico || !$cita->puedeSerModificada()) {
-            return redirect()->route('citas.index')
+        
+        // Los médicos pueden actualizar cualquier cita que les pertenezca, sin restricción de estado
+        if ($cita->id_medico !== $user->medico->id_medico) {
+            return redirect()->route('medico.citas.index')
                             ->with('error', 'No puedes actualizar esta cita.');
         }
 
@@ -338,21 +376,27 @@ class CitaController extends Controller
         if ($user->isPaciente()) {
             // Pacientes solo pueden cancelar sus citas
             if ($cita->id_paciente !== $user->paciente->id_paciente) {
-                return redirect()->route('citas.index')
+                return redirect()->route('paciente.citas.index')
                                 ->with('error', 'No puedes cancelar esta cita.');
             }
             $cita->update(['estado' => 'cancelada']);
             return redirect()->route('paciente.citas.index')
                             ->with('success', 'Cita cancelada exitosamente.');
         } elseif ($user->isMedico()) {
+            // Verificar que el médico tenga la relación cargada
+            if (!$user->medico) {
+                return redirect()->route('medico.dashboard')
+                                ->with('error', 'No tienes permisos para eliminar esta cita.');
+            }
+            
             // Médicos pueden eliminar citas completadas o canceladas
             if ($cita->id_medico !== $user->medico->id_medico) {
-                return redirect()->route('citas.index')
+                return redirect()->route('medico.citas.index')
                                 ->with('error', 'No puedes eliminar esta cita.');
             }
             
             if (!$cita->puedeSerEliminada()) {
-                return redirect()->route('citas.index')
+                return redirect()->route('medico.citas.index')
                                 ->with('error', 'Solo puedes eliminar citas completadas o canceladas.');
             }
 
@@ -361,7 +405,11 @@ class CitaController extends Controller
                             ->with('success', 'Cita eliminada exitosamente.');
         }
 
-        return redirect()->route('citas.index')
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard')
+                        ->with('error', 'No tienes permisos para realizar esta acción.');
+        }
+        return redirect()->route('dashboard')
                         ->with('error', 'No tienes permisos para realizar esta acción.');
     }
 
@@ -427,6 +475,7 @@ class CitaController extends Controller
      */
     public function paciente()
     {
+        
         $user = Auth::user();
         
         if (!$user->isPaciente()) {
@@ -435,6 +484,8 @@ class CitaController extends Controller
 
         $hoy = now();
         $proximos7Dias = $hoy->copy()->addDays(7);
+      
+      
 
         // Citas próximas (próximos 7 días)
         $citasProximas = Cita::with(['medico.usuario'])
@@ -444,6 +495,8 @@ class CitaController extends Controller
             ->where('estado', '!=', 'cancelada')
             ->orderBy('fecha')
             ->get();
+
+       
 
         // Citas futuras (después de 7 días)
         $citasFuturas = Cita::with(['medico.usuario'])
@@ -462,6 +515,23 @@ class CitaController extends Controller
 
         return view('paciente.citas', compact('citasProximas', 'citasFuturas', 'citasPasadas'));
     }
+
+    //* Enviar recordatorio de cita
+    public function enviarRecordatorioCita()
+{
+    $mañana = now()->addDay()->toDateString();
+
+    // Obtener todas las citas programadas para mañana
+    $citasMañana = Cita::with('paciente.usuario')
+        ->whereDate('fecha', $mañana)
+        ->get();
+
+    foreach ($citasMañana as $cita) {
+        Mail::to($cita->paciente->usuario->email)
+            ->send(new RecordatorioCita($cita));
+    }
+}
+
 
     
 } 

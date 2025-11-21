@@ -7,6 +7,9 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
+    protected $commands = [
+        \App\Console\Commands\EnviarRecordatorios::class,
+    ];
     /**
      * Define the application's command schedule.
      *
@@ -15,8 +18,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Ejecutar cada día a las 8:00 AM
+        $schedule->command('recordatorios:enviar')->dailyAt('08:00');
     }
+    
 
     /**
      * Register the commands for the application.

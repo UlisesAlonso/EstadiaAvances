@@ -239,9 +239,28 @@ class TimeoutSesion {
                 clearInterval(this.intervaloCountdown);
                 this.intervaloCountdown = null;
                 console.log('⏰ Sesión cerrada por timeout');
-                this.manejarSesionExpirada();
+                // Redirigir directamente sin esperar respuesta del servidor
+                this.redirigirAlLoginDirecto();
             }
         }, 1000);
+    }
+    
+    redirigirAlLoginDirecto() {
+        // Detener todas las actividades
+        this.estaActivo = false;
+        this.ocultarAdvertencia();
+        
+        // Obtener la ruta del login
+        const loginRoute = document.querySelector('meta[name="login-route"]')?.content;
+        
+        if (loginRoute) {
+            console.log('Redirigiendo directamente a login:', loginRoute);
+            window.location.replace(loginRoute);
+        } else {
+            // Fallback: usar ruta relativa
+            console.log('Redirigiendo directamente a login usando ruta relativa');
+            window.location.replace('/login');
+        }
     }
     
 
@@ -339,13 +358,37 @@ class TimeoutSesion {
 
         document.body.appendChild(modal);
         
+        // Función para redirigir al login
+        const redirigirAlLogin = () => {
+            try {
+                // Intentar obtener la URL del login desde el meta tag
+                const loginRoute = document.querySelector('meta[name="login-route"]')?.content;
+                
+                if (loginRoute) {
+                    console.log('Redirigiendo a login usando meta tag:', loginRoute);
+                    window.location.replace(loginRoute);
+                } else {
+                    // Fallback: usar ruta relativa simple
+                    console.log('Redirigiendo a login usando ruta relativa');
+                    window.location.replace('/login');
+                }
+            } catch (error) {
+                console.error('Error al redirigir:', error);
+                // Fallback final: usar ruta absoluta simple
+                window.location.replace(window.location.origin + '/login');
+            }
+        };
+        
         // Configurar el botón para ir al login
         const botonLogin = modal.querySelector('#ir-al-login');
         if (botonLogin) {
-            botonLogin.addEventListener('click', () => {
-                window.location.href = '/login';
-            });
+            botonLogin.addEventListener('click', redirigirAlLogin);
         }
+        
+        // Redirigir automáticamente después de 3 segundos si no se hace clic
+        setTimeout(() => {
+            redirigirAlLogin();
+        }, 3000);
     }
 
     mostrarMensajeExito(mensaje) {
