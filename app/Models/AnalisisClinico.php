@@ -17,12 +17,17 @@ class AnalisisClinico extends Model
         'id_paciente',
         'id_medico',
         'tipo_analisis',
+        'descripcion',
         'resultado',
+        'valores_cuantitativos',
+        'observaciones_clinicas',
         'fecha',
+        'estado',
     ];
 
     protected $casts = [
         'fecha' => 'date',
+        'valores_cuantitativos' => 'array',
     ];
 
     // Relaciones
