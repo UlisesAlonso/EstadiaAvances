@@ -54,4 +54,14 @@ class Paciente extends Model
     {
         return $this->hasMany(Analisis::class, 'id_paciente', 'id_paciente');
     }
+
+    public function observacionesSeguimiento()
+    {
+        return $this->hasMany(ObservacionSeguimiento::class, 'id_paciente', 'id_paciente');
+    }
+
+    public function actividades()
+    {
+        return $this->hasMany(Actividad::class, 'id_paciente', 'id_paciente');
+    }
 } 

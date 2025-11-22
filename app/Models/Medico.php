@@ -56,4 +56,9 @@ class Medico extends Model
     {
         return $this->hasMany(Analisis::class, 'id_medico', 'id_medico');
     }
+
+    public function observacionesSeguimiento()
+    {
+        return $this->hasMany(ObservacionSeguimiento::class, 'id_medico', 'id_medico');
+    }
 } 

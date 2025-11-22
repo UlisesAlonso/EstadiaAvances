@@ -16,6 +16,7 @@ use App\Http\Controllers\CatalogoDiagnosticoController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\PreguntaController;
 use App\Http\Controllers\AnalisisController;
+use App\Http\Controllers\SeguimientoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -113,6 +114,14 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('historial-clinico', HistorialClinicoController::class);
         Route::post('/historial-clinico/{id}/cerrar', [HistorialClinicoController::class, 'cerrar'])->name('historial-clinico.cerrar');
         Route::get('/historial-clinico/reporte/{id_paciente?}', [HistorialClinicoController::class, 'reporte'])->name('historial-clinico.reporte');
+        Route::get('/seguimiento/{id_paciente?}', [SeguimientoController::class, 'index'])->name('seguimiento.index');
+        Route::get('/seguimiento/{id_paciente}/observaciones/create', [SeguimientoController::class, 'createObservacion'])->name('seguimiento.observaciones.create');
+        Route::post('/seguimiento/{id_paciente}/observaciones', [SeguimientoController::class, 'storeObservacion'])->name('seguimiento.observaciones.store');
+        Route::get('/seguimiento/observaciones/{id}/edit', [SeguimientoController::class, 'editObservacion'])->name('seguimiento.observaciones.edit');
+        Route::put('/seguimiento/observaciones/{id}', [SeguimientoController::class, 'updateObservacion'])->name('seguimiento.observaciones.update');
+        Route::delete('/seguimiento/observaciones/{id}', [SeguimientoController::class, 'destroyObservacion'])->name('seguimiento.observaciones.destroy');
+        Route::get('/seguimiento/{id_paciente}/reporte/pdf', [SeguimientoController::class, 'reportePDF'])->name('seguimiento.reporte.pdf');
+        Route::get('/seguimiento/{id_paciente}/reporte/excel', [SeguimientoController::class, 'reporteExcel'])->name('seguimiento.reporte.excel');
     });
     
     // Rutas de respaldo y restauración
@@ -142,6 +151,14 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('analisis', AnalisisController::class);
         Route::resource('pacientes', MedicoPacienteController::class);
         Route::post('/pacientes/{id}/toggle-status', [MedicoPacienteController::class, 'toggleStatus'])->name('pacientes.toggle-status');
+        Route::get('/seguimiento/{id_paciente?}', [SeguimientoController::class, 'index'])->name('seguimiento.index');
+        Route::get('/seguimiento/{id_paciente}/observaciones/create', [SeguimientoController::class, 'createObservacion'])->name('seguimiento.observaciones.create');
+        Route::post('/seguimiento/{id_paciente}/observaciones', [SeguimientoController::class, 'storeObservacion'])->name('seguimiento.observaciones.store');
+        Route::get('/seguimiento/observaciones/{id}/edit', [SeguimientoController::class, 'editObservacion'])->name('seguimiento.observaciones.edit');
+        Route::put('/seguimiento/observaciones/{id}', [SeguimientoController::class, 'updateObservacion'])->name('seguimiento.observaciones.update');
+        Route::delete('/seguimiento/observaciones/{id}', [SeguimientoController::class, 'destroyObservacion'])->name('seguimiento.observaciones.destroy');
+        Route::get('/seguimiento/{id_paciente}/reporte/pdf', [SeguimientoController::class, 'reportePDF'])->name('seguimiento.reporte.pdf');
+        Route::get('/seguimiento/{id_paciente}/reporte/excel', [SeguimientoController::class, 'reporteExcel'])->name('seguimiento.reporte.excel');
     });
     
     // Rutas de paciente
@@ -161,6 +178,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/preguntas/{id}/responder', [PreguntaController::class, 'responder'])->name('preguntas.responder');
         Route::get('/analisis', [AnalisisController::class, 'paciente'])->name('analisis.index');
         Route::get('/analisis/{id}', [AnalisisController::class, 'pacienteShow'])->name('analisis.show');
+        Route::get('/seguimiento', [SeguimientoController::class, 'paciente'])->name('seguimiento.index');
     });
     
     // Rutas compartidas
