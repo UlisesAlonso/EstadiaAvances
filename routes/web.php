@@ -17,6 +17,8 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\PreguntaController;
 use App\Http\Controllers\AnalisisController;
 use App\Http\Controllers\SeguimientoController;
+use App\Http\Controllers\MensajesController;
+use App\Http\Controllers\NotificacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -191,6 +193,29 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::post('/historial-clinico/{id}/cerrar', [HistorialClinicoController::class, 'cerrar'])->name('historial-clinico.cerrar');
         Route::get('/historial-clinico/reporte/{id_paciente?}', [HistorialClinicoController::class, 'reporte'])->name('historial-clinico.reporte');
     });
+    
+    // Rutas de mensajes (dentro del middleware auth)
+    Route::get('/mensajes', [MensajesController::class, 'index'])->name('mensajes.index');
+    Route::get('/mensajes/paciente', [MensajesController::class, 'mensajesPaciente'])->name('mensajes.paciente');
+    Route::get('/mensajes/medico', [MensajesController::class, 'mensajesMedico'])->name('mensajes.medico');
+    Route::get('/mensajes/iniciar-chat/{id_usuario}', [MensajesController::class, 'iniciarChat'])->name('mensajes.iniciar-chat');
+    Route::post('/mensajes', [MensajesController::class, 'store'])->name('mensajes.store');
+    Route::post('/mensajes/post', [MensajesController::class, 'postMensajes'])->name('mensajes.post');
+    Route::get('/mensajes/mensajesPaciente', [MensajesController::class, 'mensajesPaciente'])->name('mensajes.mensajesPaciente');
+    Route::get('/mensajes/mensajesMedico', [MensajesController::class, 'mensajesMedico'])->name('mensajes.mensajesMedico');
+    Route::get('/mensajes/getMensajes/{id_chat}', [MensajesController::class, 'getMensajes'])->name('mensajes.getMensajes');    
+    Route::post('/mensajes/postMensajes', [MensajesController::class, 'postMensajes'])->name('mensajes.postMensajes');
+    
+    // Rutas de notificaciones
+    Route::middleware(['role:medico'])->prefix('medico')->name('medico.')->group(function () {
+        Route::get('/notificaciones', [NotificacionController::class, 'index'])->name('notificaciones.index');
+        Route::get('/notificaciones/tabla', [NotificacionController::class, 'actualizarTabla'])->name('notificaciones.tabla');
+    });
+
+    Route::middleware(['role:paciente'])->prefix('paciente')->name('paciente.')->group(function () {
+        Route::get('/notificaciones', [NotificacionController::class, 'index'])->name('notificaciones.index');
+        Route::get('/notificaciones/tabla', [NotificacionController::class, 'actualizarTabla'])->name('notificaciones.tabla');
+    });
 });
 
 // Rutas de API para AJAX
@@ -202,5 +227,7 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
     Route::get('/especialidades', function () {
         return \App\Models\Medico::distinct()->pluck('especialidad');
     })->name('especialidades');
+    
+    // API para obtener mensajes de un chat
+    Route::get('/mensajes/{id_chat}', [MensajesController::class, 'getMensajes'])->name('mensajes.get');
 });
-

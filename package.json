@@ -16,6 +16,27 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
-        "lodash": "^4.17.21"
-    }
+        "express": "^5.1.0",
+        "lodash": "^4.17.21",
+        "mysql2": "^3.15.3",
+        "socket.io": "^4.8.1"
+    },
+    "name": "sistema-cardiovascular",
+    "version": "1.0.0",
+    "description": "Sistema web desarrollado en Laravel 10 para la gestión de pacientes con enfermedades cardiovasculares. Permite la administración de citas médicas, tratamientos, diagnósticos e historial clínico.",
+    "main": "tailwind.config.js",
+    "directories": {
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/UlisesAlonso/EstadiaAvances.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/UlisesAlonso/EstadiaAvances/issues"
+    },
+    "homepage": "https://github.com/UlisesAlonso/EstadiaAvances#readme"
 }

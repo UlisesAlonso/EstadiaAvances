@@ -13,26 +13,23 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('mensajes', function (Blueprint $table) {
-            $table->id('id_mensaje');
-            $table->unsignedBigInteger('id_chat');
-            $table->unsignedBigInteger('id_usuario');
-            $table->text('mensaje');
-            $table->dateTime('fecha_envio');
+        Schema::create('chats', function (Blueprint $table) {
+            $table->id('id_chat');
+            $table->unsignedBigInteger('user_one_id');
+            $table->unsignedBigInteger('user_two_id');
             $table->timestamps();
             
             // Índices antes de las foreign keys
-            $table->index('id_chat');
-            $table->index('id_usuario');
+            $table->index('user_one_id');
+            $table->index('user_two_id');
             
-            // Relaciones con la tabla de chats
-            $table->foreign('id_chat')
-                  ->references('id_chat')
-                  ->on('chats')
+            // Relaciones con la tabla de usuarios
+            $table->foreign('user_one_id')
+                  ->references('id_usuario')
+                  ->on('usuarios')
                   ->onDelete('cascade');
                   
-            // Relaciones con la tabla de usuarios
-            $table->foreign('id_usuario')
+            $table->foreign('user_two_id')
                   ->references('id_usuario')
                   ->on('usuarios')
                   ->onDelete('cascade');
@@ -46,6 +43,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('mensajes');
+        Schema::dropIfExists('chats');
     }
 };

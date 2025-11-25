@@ -11,8 +11,8 @@ class Mensaje extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'remitente_id',
-        'destinatario_id',
+        'id_chat',
+        'id_usuario',
         'mensaje',
         'fecha_envio'
     ];
@@ -21,13 +21,13 @@ class Mensaje extends Model
         'fecha_envio' => 'datetime',
     ];
 
-    public function remitente()
+    public function chat()
     {
-        return $this->belongsTo(User::class, 'remitente_id', 'id_usuario');
+        return $this->belongsTo(Chat::class, 'id_chat', 'id_chat');
     }
 
-    public function destinatario()
+    public function usuario()
     {
-        return $this->belongsTo(User::class, 'destinatario_id', 'id_usuario');
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
 } 
