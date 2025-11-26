@@ -19,6 +19,8 @@ use App\Http\Controllers\AnalisisController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\MensajesController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\ForoController;
+use App\Http\Controllers\ReporteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +126,27 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::delete('/seguimiento/observaciones/{id}', [SeguimientoController::class, 'destroyObservacion'])->name('seguimiento.observaciones.destroy');
         Route::get('/seguimiento/{id_paciente}/reporte/pdf', [SeguimientoController::class, 'reportePDF'])->name('seguimiento.reporte.pdf');
         Route::get('/seguimiento/{id_paciente}/reporte/excel', [SeguimientoController::class, 'reporteExcel'])->name('seguimiento.reporte.excel');
+        
+        // Rutas del foro para administradores (moderación)
+        Route::get('/foro/moderacion', [ForoController::class, 'moderacion'])->name('foro.moderacion');
+        Route::post('/foro/{id}/aprobar', [ForoController::class, 'aprobar'])->name('foro.aprobar');
+        Route::post('/foro/{id}/ocultar', [ForoController::class, 'ocultar'])->name('foro.ocultar');
+        Route::delete('/foro/{id}/eliminar', [ForoController::class, 'destroy'])->name('foro.destroy'); // Admin puede eliminar cualquier publicación
+        
+        // Rutas de reportes (solo administradores)
+        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::get('/reportes/citas', [ReporteController::class, 'citas'])->name('reportes.citas');
+        Route::post('/reportes/citas/pdf', [ReporteController::class, 'citasPDF'])->name('reportes.citas.pdf');
+        Route::get('/reportes/tratamientos', [ReporteController::class, 'tratamientos'])->name('reportes.tratamientos');
+        Route::post('/reportes/tratamientos/pdf', [ReporteController::class, 'tratamientosPDF'])->name('reportes.tratamientos.pdf');
+        Route::get('/reportes/seguimiento', [ReporteController::class, 'seguimiento'])->name('reportes.seguimiento');
+        Route::post('/reportes/seguimiento/pdf', [ReporteController::class, 'seguimientoPDF'])->name('reportes.seguimiento.pdf');
+        Route::get('/reportes/diagnosticos', [ReporteController::class, 'diagnosticos'])->name('reportes.diagnosticos');
+        Route::post('/reportes/diagnosticos/pdf', [ReporteController::class, 'diagnosticosPDF'])->name('reportes.diagnosticos.pdf');
+        Route::get('/reportes/actividades', [ReporteController::class, 'actividades'])->name('reportes.actividades');
+        Route::post('/reportes/actividades/pdf', [ReporteController::class, 'actividadesPDF'])->name('reportes.actividades.pdf');
+        Route::get('/reportes/analisis', [ReporteController::class, 'analisis'])->name('reportes.analisis');
+        Route::post('/reportes/analisis/pdf', [ReporteController::class, 'analisisPDF'])->name('reportes.analisis.pdf');
     });
     
     // Rutas de respaldo y restauración
@@ -181,11 +204,35 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/analisis', [AnalisisController::class, 'paciente'])->name('analisis.index');
         Route::get('/analisis/{id}', [AnalisisController::class, 'pacienteShow'])->name('analisis.show');
         Route::get('/seguimiento', [SeguimientoController::class, 'paciente'])->name('seguimiento.index');
+        
+        // Rutas del foro para pacientes
+        // IMPORTANTE: Las rutas específicas deben ir ANTES del resource para evitar conflictos
+        Route::get('/foro/mis-publicaciones', [ForoController::class, 'misPublicaciones'])->name('foro.mis-publicaciones');
+        Route::get('/foro/favoritos', [ForoController::class, 'favoritos'])->name('foro.favoritos');
+
+        // Rutas de comentarios del foro
+        Route::post('/foro/{id}/comentarios', [ForoController::class, 'storeComentario'])->name('foro.comentarios.store');
+        Route::put('/foro/{id}/comentarios/{idComentario}', [ForoController::class, 'updateComentario'])->name('foro.comentarios.update');
+        Route::delete('/foro/{id}/comentarios/{idComentario}', [ForoController::class, 'destroyComentario'])->name('foro.comentarios.destroy');
+
+        // Rutas de reacciones del foro
+        Route::post('/foro/{id}/reaccion', [ForoController::class, 'toggleReaccion'])->name('foro.reaccion.toggle');
+
+        // Rutas de favoritos del foro
+        Route::post('/foro/{id}/favorito', [ForoController::class, 'toggleFavorito'])->name('foro.favorito.toggle');
+
+        // Resource route debe ir al final para evitar conflictos
+        // Excluimos 'index' y 'show' porque están en rutas compartidas
+        Route::resource('foro', ForoController::class)->except(['index', 'show']);
     });
     
     // Rutas compartidas
     Route::resource('citas', CitaController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
     Route::get('/citas/disponibilidad', [CitaController::class, 'disponibilidad'])->name('citas.disponibilidad');
+    
+    // Rutas compartidas del foro (accesibles para pacientes y administradores)
+    Route::get('/foro', [ForoController::class, 'index'])->name('foro.index');
+    Route::get('/foro/{id}', [ForoController::class, 'show'])->name('foro.show');
     
     // Rutas compartidas de historial clínico (para médicos y administradores)
     Route::middleware(['role:medico,admin'])->group(function () {

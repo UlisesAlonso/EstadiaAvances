@@ -64,4 +64,9 @@ class Paciente extends Model
     {
         return $this->hasMany(Actividad::class, 'id_paciente', 'id_paciente');
     }
+
+    public function publicacionesForo()
+    {
+        return $this->hasMany(PublicacionForo::class, 'id_paciente', 'id_paciente');
+    }
 } 

@@ -50,4 +50,9 @@ class Actividad extends Model
     {
         return $this->hasMany(HistorialActividad::class, 'id_actividad', 'id_actividad');
     }
+
+    public function publicacionesForo()
+    {
+        return $this->hasMany(PublicacionForo::class, 'id_actividad', 'id_actividad');
+    }
 } 

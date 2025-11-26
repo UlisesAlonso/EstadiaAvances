@@ -46,4 +46,9 @@ class Tratamiento extends Model
     {
         return $this->belongsTo(Diagnostico::class, 'id_diagnostico', 'id_diagnostico');
     }
+
+    public function publicacionesForo()
+    {
+        return $this->hasMany(PublicacionForo::class, 'id_tratamiento', 'id_tratamiento');
+    }
 } 

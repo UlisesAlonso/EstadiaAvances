@@ -22,7 +22,25 @@ class TratamientoController extends Controller
     {
         $user = Auth::user();
         
-        if ($user->isMedico()) {
+        if ($user->isAdmin()) {
+            // Administradores ven todos los tratamientos
+            $tratamientos = Tratamiento::with(['paciente.usuario', 'medico.usuario', 'diagnostico.catalogoDiagnostico'])
+                ->when($request->filled('estado'), function($query) use ($request) {
+                    return $query->where('activo', $request->estado === 'activo');
+                })
+                ->when($request->filled('paciente'), function($query) use ($request) {
+                    return $query->whereHas('paciente.usuario', function($q) use ($request) {
+                        $q->where('nombre', 'like', '%' . $request->paciente . '%');
+                    });
+                })
+                ->when($request->filled('medico'), function($query) use ($request) {
+                    return $query->whereHas('medico.usuario', function($q) use ($request) {
+                        $q->where('nombre', 'like', '%' . $request->medico . '%');
+                    });
+                })
+                ->orderBy('fecha_inicio', 'desc')
+                ->paginate(15);
+        } elseif ($user->isMedico()) {
             // Médicos ven sus tratamientos
             $tratamientos = Tratamiento::with(['paciente.usuario', 'diagnostico.catalogoDiagnostico'])
                 ->where('id_medico', $user->medico->id_medico)
