@@ -9,6 +9,8 @@ use App\Models\Diagnostico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AnalisisRegistrado;
 
 class AnalisisController extends Controller
 {
@@ -158,6 +160,15 @@ class AnalisisController extends Controller
             'observaciones_clinicas' => $request->observaciones_clinicas,
             'fecha_creacion' => now(),
         ]);
+
+        // Cargar relaciones para el correo
+        $analisis->load(['paciente.usuario', 'medico.usuario']);
+
+        // Enviar correo al paciente
+        if ($analisis->paciente && $analisis->paciente->usuario && $analisis->paciente->usuario->correo) {
+            Mail::to($analisis->paciente->usuario->correo)
+                ->send(new AnalisisRegistrado($analisis, $analisis->paciente->usuario));
+        }
 
         $route = $user->isAdmin() ? 'admin.analisis.index' : 'medico.analisis.index';
         return redirect()->route($route)->with('success', 'Análisis clínico creado exitosamente.');
